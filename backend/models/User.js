@@ -51,22 +51,18 @@ const userSchema = new mongoose.Schema({
   timestamps: true 
 });
 
-// Hash password before saving
 userSchema.pre('save', async function(next) {
+  console.log("Pre-save hook running"); // Add this line
   if (!this.isModified('password')) return next();
-  
+
+  console.log("Password:", this.password); // Add this line
+  console.log("Password Confirm:", this.passwordConfirm); // Add this line
+
+  // Hash the password
   this.password = await bcrypt.hash(this.password, 12);
-  this.passwordConfirm = undefined; // Don't persist in DB
+  this.passwordConfirm = undefined;
   next();
 });
-
-// Method to check password
-userSchema.methods.correctPassword = async function(
-  candidatePassword, 
-  userPassword
-) {
-  return await bcrypt.compare(candidatePassword, userPassword);
-};
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;

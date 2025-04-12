@@ -1,5 +1,6 @@
 require('dotenv').config(); // Load environment variables first
 const express = require('express');
+const cors = require('cors');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 
@@ -16,6 +17,18 @@ mongoose.set('strictQuery', false);
 // Create Express app
 const app = express();
 
+// CORS options to handle cross-origin requests from the frontend
+const corsOptions = {
+  origin: 'http://localhost:3000',  // Allow only requests from localhost:3000
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+};
+
+// Apply CORS middleware with the configured options
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Enable preflight for all routes
+
 // Middleware
 app.use(express.json()); // For parsing application/json
 
@@ -30,11 +43,13 @@ console.log('Environment Variables:', {
 
 // Connect to MongoDB Atlas
 connectDB();
-// Add this before other routes
+
+// Default route to check if API is running
 app.get('/', (req, res) => {
   res.send('Credit Bureau Management System API is running');
 });
-// Routes
+
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', userRoutes); // All user routes start with /api/users
 app.use('/api', borrowerRoutes);
@@ -42,16 +57,14 @@ app.use('/api', loanRoutes);
 app.use('/api/repayments', repaymentRoutes);
 app.use('/api/creditReports', creditReportRoutes); 
 
-
-// Health check endpoint
+// Health check endpoint for checking server and DB status
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
     database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 });
-
 
 // Error handling middleware
 app.use((err, req, res, next) => {

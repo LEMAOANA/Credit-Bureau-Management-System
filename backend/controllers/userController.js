@@ -2,12 +2,22 @@ const User = require('../models/User');
 
 // Create a new user
 exports.createUser = async (req, res) => {
+  const { password, passwordConfirm } = req.body;
+
+  // Step 1: Check if passwords match
+  if (password !== passwordConfirm) {
+    return res.status(400).json({ success: false, error: 'Passwords do not match' });
+  }
+
+  // Step 2: Remove passwordConfirm from the request body before saving the user
+  delete req.body.passwordConfirm;
+
   try {
-    const user = new User(req.body);
-    await user.save();
-    res.status(201).json({ success: true, data: user });
+    const user = new User(req.body); // Create a new user with the sanitized body
+    await user.save(); // Save the user to the database
+    res.status(201).json({ success: true, data: user }); // Send success response
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    res.status(400).json({ success: false, error: err.message }); // Send error response
   }
 };
 

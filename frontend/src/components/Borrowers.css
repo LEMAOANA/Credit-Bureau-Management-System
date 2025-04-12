@@ -1,0 +1,72 @@
+.borrowers-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.borrowers-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.borrowers-table th, .borrowers-table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.borrowers-table th {
+  background-color: #f2f2f2;
+}
+
+.add-borrower-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  color: #1976d2;
+}
+
+.actions button {
+  margin: 0 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+form {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+form input, form select {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+form button {
+  padding: 8px 15px;
+  margin-right: 10px;
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+form button[type="button"] {
+  background-color: #6c757d;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+}

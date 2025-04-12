@@ -2,70 +2,77 @@
 # PROJECT STRUCTURE
 Credit-Bureau-Management-System/
 │
-├── backend/                         # Backend (Node.js, Express, MongoDB)
-│   ├── config/
-│   │   └── db.js                    # MongoDB connection file
+├── backend/                                   # Backend - Node.js, Express, MongoDB
+│   ├── config/                                 # Configuration files
+│   │   └── db.js                               # MongoDB connection setup
 │   │
-│   ├── controllers/                 # Handles logic for each resource
+│   ├── controllers/                            # Route handler logic (controllers)
 │   │   ├── authController.js
 │   │   ├── borrowerController.js
 │   │   ├── loanController.js
 │   │   ├── repaymentController.js
 │   │   └── creditReportController.js
 │   │
-│   ├── models/                      # Mongoose schemas
+│   ├── models/                                 # Mongoose schemas (data models)
 │   │   ├── User.js
 │   │   ├── Borrower.js
 │   │   ├── Loan.js
 │   │   ├── Repayment.js
 │   │   └── CreditReport.js
 │   │
-│   ├── routes/                      # Express routes
+│   ├── routes/                                 # API route definitions
 │   │   ├── authRoutes.js
 │   │   ├── borrowerRoutes.js
 │   │   ├── loanRoutes.js
 │   │   ├── repaymentRoutes.js
 │   │   └── creditReportRoutes.js
 │   │
-│   ├── middleware/                  # Custom middleware
-│   │   └── authMiddleware.js
+│   ├── middleware/                             # Middleware functions
+│   │   └── authMiddleware.js                   # Auth/authentication middleware
 │   │
-│   ├── utilities/                   # Helpers and error handlers
-│   │   ├── appError.js
-│   │   └── catchAsync.js
+│   ├── utilities/                              # Utility functions & error handlers
+│   │   ├── appError.js                         # Custom error class
+│   │   └── catchAsync.js                       # Async error wrapper
 │   │
-│   ├── server.js                    # Starts the Express server
-│   ├── package.json
-│   ├── .env
+│   ├── server.js                               # Entry point to start the backend server
+│   ├── package.json                            # Backend dependencies & scripts
+│   ├── .env                                    # Environment variables
 │   └── README.md
 │
-├── frontend/                        # Frontend (React)
-│   ├── public/
-│   │   └── index.html               # Main HTML file
+├── frontend/                                   # Frontend - React
+│   ├── public/                                 # Publicly accessible static files
+│   │   └── index.html
 │   │
 │   ├── src/
-│   │   ├── components/              # Reusable UI components
-│   │   │   ├── Dashboard.js         # Dashboard with credit summary
-│   │   │   ├── BorrowerForm.js
-│   │   │   ├── LoanForm.js
-│   │   │   ├── RepaymentForm.js
-│   │   │   └── CreditReportView.js
-│   │   │
-│   │   ├── pages/                   # Full pages/views
+│   │   ├── components/                         # Reusable UI components
 │   │   │   ├── Home.js
-│   │   │   ├── Borrowers.js
-│   │   │   ├── Loans.js
-│   │   │   └── Reports.js
+│   │   │   ├── Home.css
+│   │   │   ├── Login.js
+│   │   │   └── Login.css
+                users,js
+                Borrowers.js
+                Loans.js
+                Repayments,js
+                CreditReports.js
 │   │   │
-│   │   ├── App.js                   # Root component
-│   │   ├── index.js                 # React app entry point
-│   │   └── App.css                  # Styling
+│   │   ├── contexts/                           # React context providers
+│   │   │   └── AuthContext.js
+│   │   │
+│   │   ├── services/                           # Frontend service/API layer
+│   │   │   ├── api.js
+│   │   │   ├── authService.js
+│   │   │
+│   │   ├── App.js
+│   │   ├── App.css
+│   │   ├── index.js                            # React entry point
+│   │   └── index.css
 │   │
-│   ├── package.json
-│   └── README.md
+│   ├── .env                                    # Frontend environment variables
+│   ├── package.json                            # Frontend dependencies & scripts
+│   └── node_modules/
 │
-├── .gitignore                       # Ignore node_modules, env files, etc.
-└── README.md                        # Overview and setup instructions
+├── .gitignore                                  # Files and folders to be ignored by Git
+└── README.md                                   # Project overview and documentation
 
 
 # REQUIRMENTS

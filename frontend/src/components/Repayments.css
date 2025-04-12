@@ -1,0 +1,127 @@
+.repayments-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .repayments-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  
+  .repayments-table th, .repayments-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+  
+  .repayments-table th {
+    background-color: #f2f2f2;
+  }
+  
+  .add-repayment-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0;
+    cursor: pointer;
+    color: #1976d2;
+  }
+  
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .search-bar input {
+    padding: 8px;
+    width: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .actions button, .icon-button {
+    margin: 0 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  
+  form {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+  }
+  
+  form input, form select {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .form-field {
+    margin-bottom: 10px;
+  }
+  
+  .form-field label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+  }
+  
+  .date-picker-container {
+    margin-bottom: 10px;
+  }
+  
+  .date-picker-container .react-datepicker-wrapper {
+    width: 100%;
+  }
+  
+  .date-picker-container .react-datepicker__input-container {
+    width: 100%;
+  }
+  
+  .date-picker-container .react-datepicker__input-container input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  form button {
+    padding: 8px 15px;
+    margin-right: 10px;
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  form button[type="button"] {
+    background-color: #6c757d;
+  }
+  
+  .loading {
+    text-align: center;
+    padding: 20px;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .repayments-table {
+      display: block;
+      overflow-x: auto;
+    }
+    
+    .search-bar input {
+      width: 100%;
+    }
+  }
