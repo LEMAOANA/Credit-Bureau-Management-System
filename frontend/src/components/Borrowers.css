@@ -1,72 +1,198 @@
+/* Borrowers.css - Styled similar to Users.css theme */
+
+/* ========== Layout & Base ========== */
 .borrowers-container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background-color: #1e293b;
+  padding: 2rem;
+  min-height: 100vh;
 }
 
-.borrowers-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
+.borrowers-title {
+  font-size: 2rem;
+  color: #10b981;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
 }
 
-.borrowers-table th, .borrowers-table td {
-  padding: 10px;
-  border: 1px solid #ddd;
-  text-align: left;
-}
-
-.borrowers-table th {
-  background-color: #f2f2f2;
-}
-
+/* ========== Toggle/Add Borrower Section ========== */
 .add-borrower-toggle {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
+  color: #10b981;
   cursor: pointer;
-  color: #1976d2;
-}
-
-.actions button {
-  margin: 0 5px;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-form {
-  background: #f9f9f9;
-  padding: 20px;
-  border-radius: 5px;
-  margin-bottom: 20px;
-}
-
-form input, form select {
-  display: block;
-  width: 100%;
-  padding: 8px;
+  font-weight: bold;
   margin-bottom: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
 }
 
-form button {
+.add-borrower-toggle span {
+  margin-left: 8px;
+}
+
+/* ========== Borrower Form ========== */
+.borrower-form {
+  background-color: #1f2937;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+}
+
+.borrower-form label {
+  display: flex;
+  align-items: center;
+  color: #e5e7eb;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.borrower-form input,
+.borrower-form select,
+.borrower-form textarea {
+  width: 100%;
+  padding: 10px;
+  background-color: #2d3748;
+  border: 1px solid #10b981;
+  color: #f3f4f6;
+  border-radius: 5px;
+  margin-bottom: 1rem;
+  font-size: 16px;
+}
+
+.borrower-form .form-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.borrower-form button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.3s ease;
+}
+
+.borrower-form .btn-submit {
+  background-color: #10b981;
+  color: #fff;
+}
+
+.borrower-form .btn-submit:hover {
+  background-color: #3b82f6;
+}
+
+.borrower-form .btn-cancel {
+  background-color: #d1d5db;
+  color: #1f2937;
+}
+
+.borrower-form .btn-cancel:hover {
+  background-color: #9ca3af;
+}
+
+/* ========== Borrowers Table ========== */
+.borrowers-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 2rem;
+  background-color: #1e293b;
+}
+
+.borrowers-table th,
+.borrowers-table td {
+  padding: 1rem;
+  text-align: left;
+  font-size: 1rem;
+}
+
+.borrowers-table th {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.borrowers-table td {
+  background-color: #2d3748;
+  border-bottom: 1px solid #1f2937;
+  color: #f3f4f6;
+}
+
+.borrowers-table tr:hover {
+  background-color: #3b82f6;
+}
+
+.borrowers-table button {
+  padding: 5px 10px;
+  background-color: #3b82f6;
+  color: #fff;
+  border: 1px solid #3b82f6;
+  border-radius: 5px;
+  margin: 0 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.borrowers-table button:hover {
+  background-color: #10b981;
+  border-color: #10b981;
+}
+
+/* ========== Loading & Empty States ========== */
+.borrowers-loading {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #94a3b8;
+  margin-top: 2rem;
+}
+
+.borrowers-empty {
+  text-align: center;
+  font-style: italic;
+  color: #6b7280;
+  padding: 20px 0;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+  .borrowers-container {
+    padding: 1rem;
+  }
+
+  .borrower-form input,
+  .borrower-form select,
+  .borrower-form textarea {
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  .borrowers-table th,
+  .borrowers-table td {
+    padding: 0.75rem;
+  }
+}
+/* Add these styles to your existing Borrowers.css */
+.borrowers-table-container {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.show-toggle-button {
+  margin: 15px auto;
   padding: 8px 15px;
-  margin-right: 10px;
-  background-color: #1976d2;
+  background-color: #2196F3;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  transition: background-color 0.3s;
 }
 
-form button[type="button"] {
-  background-color: #6c757d;
-}
-
-.loading {
-  text-align: center;
-  padding: 20px;
+.show-toggle-button:hover {
+  background-color: #0b7dda;
 }

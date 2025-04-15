@@ -1,84 +1,120 @@
-const Loan = require('../models/Loan'); // Import Loan model
+const Loan = require('../models/Loan');
+
+// Create a new loan
+exports.createLoan = async (req, res) => {
+  try {
+    const loan = new Loan(req.body);
+    await loan.save();
+    res.status(201).json(loan);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
 
 // Get all loans
 exports.getAllLoans = async (req, res) => {
   try {
     const loans = await Loan.find().populate('borrower');
-    res.status(200).json({
-      success: true,
-      count: loans.length,
-      data: loans
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching loans'
-    });
+    res.json(loans);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
-// Get a single loan by ID
+// Get loan by ID
 exports.getLoanById = async (req, res) => {
   try {
     const loan = await Loan.findById(req.params.id).populate('borrower');
-    if (!loan) {
-      return res.status(404).json({
-        success: false,
-        message: 'Loan not found'
-      });
-    }
-    res.status(200).json({
-      success: true,
-      data: loan
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching loan'
-    });
+    if (!loan) return res.status(404).json({ error: 'Loan not found' });
+    res.json(loan);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 };
 
-// Approve loan
-exports.approveLoan = async (req, res) => {
+// Update loan
+exports.updateLoan = async (req, res) => {
   try {
-    const loan = await Loan.findByIdAndUpdate(req.params.id, { status: 'Approved' }, { new: true });
-    if (!loan) {
-      return res.status(404).json({
-        success: false,
-        message: 'Loan not found'
-      });
-    }
-    res.status(200).json({
-      success: true,
-      data: loan
+    const loan = await Loan.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    if (!loan) return res.status(404).json({ error: 'Loan not found' });
+    res.json(loan);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 };
 
-// Reject loan
-exports.rejectLoan = async (req, res) => {
+// Delete loan
+exports.deleteLoan = async (req, res) => {
   try {
-    const loan = await Loan.findByIdAndUpdate(req.params.id, { status: 'Rejected' }, { new: true });
-    if (!loan) {
-      return res.status(404).json({
-        success: false,
-        message: 'Loan not found'
-      });
+    const loan = await Loan.findByIdAndDelete(req.params.id);
+    if (!loan) return res.status(404).json({ error: 'Loan not found' });
+    res.json({ message: 'Loan deleted successfully' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+// Start repayment for a loan
+exports.startRepayment = async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id);
+    if (!loan) return res.status(404).json({ error: 'Loan not found' });
+
+    // Check if loan is already in repayment
+    if (loan.repaymentStatus !== 'Not Started') {
+      return res.status(400).json({ error: 'Repayment has already started or completed' });
     }
-    res.status(200).json({
-      success: true,
-      data: loan
+
+    // Set repayment status to 'In Progress'
+    loan.repaymentStatus = 'In Progress';
+    await loan.save();
+
+    res.json({ message: 'Repayment started successfully', loan });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+// Update repayment status (e.g., Completed)
+exports.updateRepaymentStatus = async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id);
+    if (!loan) return res.status(404).json({ error: 'Loan not found' });
+
+    // Ensure loan is in progress before completing
+    if (loan.repaymentStatus !== 'In Progress') {
+      return res.status(400).json({ error: 'Repayment is not in progress' });
+    }
+
+    // Update repayment status to 'Completed'
+    loan.repaymentStatus = 'Completed';
+    await loan.save();
+
+    res.json({ message: 'Repayment completed successfully', loan });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+// Get repayment details for a loan
+exports.getRepaymentDetails = async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id);
+    if (!loan) return res.status(404).json({ error: 'Loan not found' });
+
+    // Calculate remaining balance (if applicable)
+    const remainingBalance = loan.totalRepaymentAmount - loan.amount;
+
+    res.json({
+      totalRepaymentAmount: loan.totalRepaymentAmount,
+      repaymentStatus: loan.repaymentStatus,
+      remainingBalance: remainingBalance > 0 ? remainingBalance : 0,
+      repaymentStartDate: loan.repaymentStartDate,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 };

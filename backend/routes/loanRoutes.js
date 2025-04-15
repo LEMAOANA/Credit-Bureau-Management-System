@@ -2,16 +2,16 @@ const express = require('express');
 const router = express.Router();
 const loanController = require('../controllers/loanController');
 
-// Route to get all loans
-router.get('/loans', loanController.getAllLoans);
+// Loan Routes
+router.post('/', loanController.createLoan);                // Create a new loan
+router.get('/', loanController.getAllLoans);                // Get all loans
+router.get('/:id', loanController.getLoanById);             // Get loan by ID
+router.put('/:id', loanController.updateLoan);              // Update loan
+router.delete('/:id', loanController.deleteLoan);           // Delete loan
 
-// Route to get a single loan by ID
-router.get('/loans/:id', loanController.getLoanById);
-
-// Route to approve loan
-router.put('/loans/:id/approve', loanController.approveLoan);
-
-// Route to reject loan
-router.put('/loans/:id/reject', loanController.rejectLoan);
+// Repayment Routes
+router.put('/:id/start-repayment', loanController.startRepayment);          // Start repayment for a loan
+router.put('/:id/update-repayment-status', loanController.updateRepaymentStatus);  // Update repayment status (e.g., "Completed")
+router.get('/:id/repayment-details', loanController.getRepaymentDetails);   // Get repayment details for a loan
 
 module.exports = router;

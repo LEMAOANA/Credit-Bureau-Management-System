@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Loan = require('./Loan'); // Import Loan model
+const { v4: uuidv4 } = require('uuid');  // Import uuid to generate unique IDs
 
 const borrowerSchema = new mongoose.Schema({
   name: {
@@ -51,6 +52,12 @@ const borrowerSchema = new mongoose.Schema({
     type: String,
     required: false, // Make this field optional
     unique: false,   // Remove the unique constraint if it's not needed
+  },
+
+  borrowerId: {
+    type: String,
+    unique: true,
+    default: uuidv4 // Automatically generate a unique borrowerId
   }
 
 }, {

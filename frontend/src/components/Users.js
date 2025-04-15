@@ -1,24 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './Users.css';
-import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 const Users = () => {
-  const initialUserState = () => ({
+  // Initial user state
+  const initialUserState = {
     username: '',
     email: '',
     password: '',
-    passwordConfirm: '', // Make sure to include this field
+    passwordConfirm: '',
     role: 'user',
     isActive: true,
-  });
-  
+  };
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newUser, setNewUser] = useState(initialUserState());
+  const [newUser, setNewUser] = useState(initialUserState);
   const [editUser, setEditUser] = useState(null);
   const [showAddUserForm, setShowAddUserForm] = useState(false);
+  const [showAllUsers, setShowAllUsers] = useState(false);
+  const displayLimit = 10;
 
+  // Fetch users on component mount
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -27,7 +31,11 @@ const Users = () => {
     try {
       const res = await axios.get('http://localhost:5001/api/users');
       if (res.data.success) {
-        setUsers(res.data.data);
+        // Sort users by createdAt date (newest first)
+        const sortedUsers = res.data.data.sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setUsers(sortedUsers);
       }
     } catch (err) {
       console.error("Error fetching users:", err);
@@ -36,61 +44,71 @@ const Users = () => {
     }
   };
 
-  const handleInputChange = (e, stateSetter) => {
+  // Handle input changes for both add and edit user forms
+  const handleInputChange = (e, setter) => {
     const { name, value, type, checked } = e.target;
-    stateSetter(prev => ({
+    setter(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
-  const handleAddUser = async (e) => {
-    e.preventDefault();
+  // Add new user
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-    // Password and password confirmation validation
-    if (newUser.password !== newUser.passwordConfirm) {
-      return alert("Passwords do not match.");
+    const { username, email, password, passwordConfirm } = newUser;
+
+    // Check if passwords match before proceeding
+    if (password !== passwordConfirm) {
+      alert("Passwords do not match!");
+      return;
     }
-
-    if (newUser.password.length < 8) {
-      return alert("Password must be at least 8 characters long.");
-    }
-
-    const { passwordConfirm, ...userData } = newUser;
 
     try {
-      const res = await axios.post('http://localhost:5001/api/users', userData);
-      if (res.data.success) {
-        setUsers([...users, res.data.data]);
-        setNewUser(initialUserState());
-        setShowAddUserForm(false);
-        alert("User added successfully!");
-      } else {
-        alert("Failed to add user: " + res.data.error);
-      }
-    } catch (err) {
-      console.error("Error adding user:", err.response || err);
-      alert("There was an error adding the user: " + (err.response ? err.response.data.error : err.message));
-    }    
+      const response = await axios.post("http://localhost:5001/api/users", {
+        username,
+        email,
+        password,
+        passwordConfirm,
+        role: "user",
+        isActive: true,
+      });
+      console.log("User added:", response.data);
+      fetchUsers(); // Refresh the user list after adding
+      setShowAddUserForm(false); // Hide the form after submission
+      setNewUser(initialUserState); // Reset form
+    } catch (error) {
+      console.error("Error adding user:", error.response ? error.response.data : error.message);
+      alert("Error adding user.");
+    }
   };
 
+  // Update user
   const handleUpdateUser = async (e) => {
     e.preventDefault();
+
     try {
-      const res = await axios.put(`http://localhost:5001/api/users/${editUser._id}`, editUser);
+      const res = await axios.put(`http://localhost:5001/api/users/${editUser._id}`, editUser, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
       if (res.data.success) {
         setUsers(users.map(user => user._id === editUser._id ? res.data.data : user));
-        setEditUser(null); // Clear the edit form
+        setEditUser(null);
         alert("User updated successfully!");
       } else {
         alert("Failed to update user: " + res.data.error);
       }
     } catch (err) {
       console.error("Error updating user:", err);
-      alert("There was an error updating the user.");
+      alert("Error updating user.");
     }
   };
 
+  // Delete user
   const handleDeleteUser = async (userId) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
 
@@ -102,11 +120,15 @@ const Users = () => {
       }
     } catch (err) {
       console.error("Error deleting user:", err);
-      alert("There was an error deleting the user.");
+      alert("Error deleting user.");
     }
   };
 
+  // Loading state
   if (loading) return <p className="loading">Loading users...</p>;
+
+  // Determine which users to display based on showAllUsers state
+  const displayedUsers = showAllUsers ? users : users.slice(0, displayLimit);
 
   return (
     <div className="users-container">
@@ -118,7 +140,7 @@ const Users = () => {
       </div>
 
       {showAddUserForm && (
-        <form onSubmit={handleAddUser} className="user-form">
+        <form onSubmit={handleSubmit} className="user-form">
           <h3>Add New User</h3>
           <input
             type="text"
@@ -215,37 +237,58 @@ const Users = () => {
       {users.length === 0 ? (
         <p>No users found.</p>
       ) : (
-        <table className="users-table">
-          <thead>
-            <tr>
-              <th>Username</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Created At</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(user => (
-              <tr key={user._id}>
-                <td>{user.username}</td>
-                <td>{user.email}</td>
-                <td>{user.role}</td>
-                <td>{user.isActive ? 'Active' : 'Inactive'}</td>
-                <td>{new Date(user.createdAt).toLocaleString()}</td>
-                <td>
-                  <button onClick={() => setEditUser(user)}>
-                    <FaEdit />
-                  </button>
-                  <button onClick={() => handleDeleteUser(user._id)}>
-                    <FaTrash />
-                  </button>
-                </td>
+        <div className="users-table-container">
+          <table className="users-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created At</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {displayedUsers.map(user => (
+                <tr key={user._id}>
+                  <td>{user.username}</td>
+                  <td>{user.email}</td>
+                  <td>{user.role}</td>
+                  <td>{user.isActive ? 'Active' : 'Inactive'}</td>
+                  <td>{new Date(user.createdAt).toLocaleString()}</td>
+                  <td>
+                    <button onClick={() => setEditUser(user)}>
+                      <FaEdit />
+                    </button>
+                    <button onClick={() => handleDeleteUser(user._id)}>
+                      <FaTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {users.length > displayLimit && (
+            <button 
+              className="show-toggle-button"
+              onClick={() => setShowAllUsers(!showAllUsers)}
+            >
+              {showAllUsers ? (
+                <>
+                  <FaChevronUp />
+                  Show Less (First {displayLimit})
+                </>
+              ) : (
+                <>
+                  <FaChevronDown />
+                  Show All ({users.length} users)
+                </>
+              )}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

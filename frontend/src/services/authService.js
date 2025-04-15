@@ -1,20 +1,23 @@
-// src/services/authService.js
+// services/authService.js
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5001/api/auth';
-
 export const login = async (email, password) => {
-  const response = await axios.post(`${API_URL}/login`, {
-    email,
-    password
-  });
+  try {
+    const response = await axios.post('http://localhost:5001/api/auth/login', {
+      email,
+      password,
+    });
 
-  if (response.data.token) {
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.data.user));
+    // Assuming the backend returns the user data and token
+    const { token, data } = response.data;
+
+    // Store the token in localStorage
+    localStorage.setItem('token', token);
+
+    // Return the user data
+    return data.user;
+  } catch (error) {
+    // Handle error
+    throw new Error(error.response ? error.response.data : error.message);
   }
-
-  return response.data;
 };
-
-export default { login };
