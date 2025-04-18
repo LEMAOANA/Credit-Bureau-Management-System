@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import './Users.css';
+import './Landers.css';
 import { FaPlus, FaEdit, FaTrash, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
-const Users = () => {
+const Landers = () => {
   // Initial user state
   const initialUserState = {
     username: '',
@@ -294,4 +294,4 @@ const Users = () => {
   );
 };
 
-export default Users;
+export default Landers;

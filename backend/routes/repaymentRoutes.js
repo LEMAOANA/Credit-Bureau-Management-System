@@ -1,17 +1,12 @@
+// routes/repaymentRoutes.js
 const express = require('express');
 const router = express.Router();
-const {
-  getRepayments,
-  getRepaymentById,
-  createRepayment,
-  updateRepayment,
-  deleteRepayment
-} = require('../controllers/repaymentController');
+const repaymentController = require('../controllers/repaymentController');
 
-router.get('/', getRepayments); // All repayments
-router.get('/:id', getRepaymentById); // Single repayment
-router.post('/', createRepayment); // Create
-router.put('/:id', updateRepayment); // Update
-router.delete('/:id', deleteRepayment); // Delete
+router.post('/', repaymentController.createRepayment);
+router.get('/', repaymentController.getAllRepayments);
+router.get('/:id', repaymentController.getRepayment);
+router.put('/:id', repaymentController.updateRepayment);
+router.delete('/:id', repaymentController.deleteRepayment);
 
 module.exports = router;

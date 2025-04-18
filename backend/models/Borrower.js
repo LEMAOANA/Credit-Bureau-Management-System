@@ -76,8 +76,12 @@ borrowerSchema.post('save', async function(doc, next) {
     await Loan.create({
       borrower: doc._id,
       amount: doc.loanAmount,
-      purpose: doc.loanPurpose
+      purpose: doc.loanPurpose,
+      interestRate: 5, // default value
+      loanTerm: 12, // 12 months
+      repaymentStartDate: new Date() // starts now
     });
+    
     next();
   } catch (error) {
     next(error);

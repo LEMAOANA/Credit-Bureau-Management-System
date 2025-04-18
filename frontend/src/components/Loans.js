@@ -4,172 +4,155 @@ import './Loans.css';
 import { FaPlus, FaEdit, FaTrash, FaUser, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 const Loans = () => {
-  const initialLoanState = () => ({
-    borrower: '',
-    amount: '',
-    purpose: '',
-    status: 'Pending',
-    repaymentStatus: 'Not Started',
-    interestRate: '',
-    loanTerm: '',
-    repaymentStartDate: ''
-  });
-
   const [loans, setLoans] = useState([]);
   const [borrowers, setBorrowers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newLoan, setNewLoan] = useState(initialLoanState());
-  const [editLoan, setEditLoan] = useState(null);
-  const [showAddLoanForm, setShowAddLoanForm] = useState(false);
+  const [newLoan, setNewLoan] = useState(initialFormState());
+  const [editingLoan, setEditingLoan] = useState(null);
+  const [showForm, setShowForm] = useState(false);
   const [showAllLoans, setShowAllLoans] = useState(false);
-  const [errors, setErrors] = useState({});
   const displayLimit = 10;
 
-  // Fetch loans and borrowers data
+  function initialFormState() {
+    return {
+      borrower: '',
+      amount: '',
+      purpose: '',
+      status: 'Pending',
+      repaymentStatus: 'Not Started',
+      interestRate: '',
+      loanTerm: '',
+      repaymentStartDate: ''
+    };
+  }
+
   useEffect(() => {
-    fetchLoans();
-    fetchBorrowers();
+    fetchData();
   }, []);
 
-  const fetchLoans = async () => {
+  const fetchData = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/loans');
-      if (res.data.success) {
-        // Sort loans by createdAt date (newest first)
-        const sortedLoans = res.data.data.sort((a, b) => 
-          new Date(b.createdAt) - new Date(a.createdAt)
-        );
+      const [loansRes, borrowersRes] = await Promise.all([
+        axios.get('http://localhost:5001/api/loans'),
+        axios.get('http://localhost:5001/api/borrowers')
+      ]);
+
+      if (loansRes.data) {
+        const sortedLoans = Array.isArray(loansRes.data) 
+          ? loansRes.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          : [];
         setLoans(sortedLoans);
       }
-    } catch (err) {
-      console.error('Error fetching loans:', err);
+
+      if (borrowersRes.data?.success) {
+        setBorrowers(borrowersRes.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchBorrowers = async () => {
-    try {
-      const res = await axios.get('http://localhost:5001/api/borrowers');
-      if (res.data.success) {
-        setBorrowers(res.data.data);
-      }
-    } catch (err) {
-      console.error('Error fetching borrowers:', err);
-    }
-  };
-
-  const validateForm = (loanData) => {
-    const newErrors = {};
-    
-    if (!loanData.borrower) newErrors.borrower = 'Borrower is required';
-    if (!loanData.amount || isNaN(loanData.amount)) 
-      newErrors.amount = 'Valid amount is required';
-    if (!loanData.purpose) newErrors.purpose = 'Purpose is required';
-    if (!loanData.interestRate || isNaN(loanData.interestRate))
-      newErrors.interestRate = 'Valid interest rate is required';
-    if (!loanData.loanTerm || isNaN(loanData.loanTerm))
-      newErrors.loanTerm = 'Valid loan term is required';
-    if (!loanData.repaymentStartDate) 
-      newErrors.repaymentStartDate = 'Repayment start date is required';
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleInputChange = (e, stateSetter) => {
+  const handleChange = (e, setter) => {
     const { name, value } = e.target;
-    stateSetter(prev => ({ ...prev, [name]: value }));
+    setter(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleNumberChange = (e, stateSetter) => {
+  const handleNumberChange = (e, setter) => {
     const { name, value } = e.target;
     if (value === '' || !isNaN(value)) {
-      stateSetter(prev => ({ ...prev, [name]: value }));
+      setter(prev => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleAddLoan = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm(newLoan)) return;
+    if (editingLoan) {
+      await updateLoan();
+    } else {
+      await addLoan();
+    }
+  };
 
+  const addLoan = async () => {
     try {
-      // Convert string numbers to actual numbers
       const payload = {
-        ...newLoan,
+        borrower: newLoan.borrower,
         amount: Number(newLoan.amount),
+        purpose: newLoan.purpose,
         interestRate: Number(newLoan.interestRate),
-        loanTerm: Number(newLoan.loanTerm)
+        loanTerm: Number(newLoan.loanTerm),
+        repaymentStartDate: newLoan.repaymentStartDate,
+        status: newLoan.status,
+        repaymentStatus: newLoan.repaymentStatus
       };
 
-      const res = await axios.post('http://localhost:5001/api/loans', payload);
-      if (res.data.success) {
-        setLoans([res.data.data, ...loans]);
-        setNewLoan(initialLoanState());
-        setShowAddLoanForm(false);
-        alert('Loan added successfully!');
-      }
-    } catch (err) {
-      console.error('Error adding loan:', err);
-      alert('There was an error adding the loan: ' + (err.response?.data?.message || err.message));
+      const response = await axios.post('http://localhost:5001/api/loans', payload);
+      setLoans([response.data, ...loans]);
+      resetForm();
+      alert('Loan added successfully!');
+    } catch (error) {
+      console.error('Error adding loan:', error);
+      alert(error?.response?.data?.message || 'Failed to add loan.');
     }
   };
 
-  const handleUpdateLoan = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm(editLoan)) return;
-
+  const updateLoan = async () => {
     try {
-      // Convert string numbers to actual numbers
       const payload = {
-        ...editLoan,
-        amount: Number(editLoan.amount),
-        interestRate: Number(editLoan.interestRate),
-        loanTerm: Number(editLoan.loanTerm)
+        borrower: editingLoan.borrower,
+        amount: Number(editingLoan.amount),
+        purpose: editingLoan.purpose,
+        interestRate: Number(editingLoan.interestRate),
+        loanTerm: Number(editingLoan.loanTerm),
+        repaymentStartDate: editingLoan.repaymentStartDate,
+        status: editingLoan.status,
+        repaymentStatus: editingLoan.repaymentStatus
       };
 
-      const res = await axios.put(`http://localhost:5001/api/loans/${editLoan._id}`, payload);
-      if (res.data.success) {
-        setLoans(loans.map(loan => 
-          loan._id === editLoan._id ? res.data.data : loan
-        ));
-        setEditLoan(null);
-        alert('Loan updated successfully!');
-      }
+      const response = await axios.put(
+        `http://localhost:5001/api/loans/${editingLoan._id}`,
+        payload
+      );
+      
+      setLoans(loans.map(loan => 
+        loan._id === editingLoan._id ? response.data : loan
+      ));
+      resetForm();
+      alert('Loan updated successfully!');
     } catch (error) {
       console.error('Error updating loan:', error);
-      alert('There was an error updating the loan.');
+      alert('Failed to update loan.');
     }
-  };
-
-  const handleDeleteLoan = async (loanId) => {
-    if (!window.confirm('Are you sure you want to delete this loan?')) return;
-
-    try {
-      const res = await axios.delete(`http://localhost:5001/api/loans/${loanId}`);
-      if (res.data.success) {
-        setLoans(loans.filter(loan => loan._id !== loanId));
-      }
-    } catch (err) {
-      console.error('Error deleting loan:', err);
-      alert('Error deleting loan: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const viewBorrower = (borrowerId) => {
-    alert(`Viewing borrower details for ID: ${borrowerId}`);
   };
 
   const resetForm = () => {
-    setNewLoan(initialLoanState());
-    setEditLoan(null);
-    setShowAddLoanForm(false);
-    setErrors({});
+    setNewLoan(initialFormState());
+    setEditingLoan(null);
+    setShowForm(false);
   };
 
-  if (loading) return <p className="loading">Loading loans...</p>;
+  const deleteLoan = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this loan?')) return;
+
+    try {
+      await axios.delete(`http://localhost:5001/api/loans/${id}`);
+      setLoans(loans.filter(loan => loan._id !== id));
+      alert('Loan deleted successfully');
+    } catch (error) {
+      console.error('Error deleting loan:', error);
+      alert('Error deleting loan');
+    }
+  };
+
+  const viewBorrower = (id) => {
+    alert(`Viewing borrower details for ID: ${id}`);
+  };
+
+  const statusOptions = ['Pending', 'Approved', 'Rejected'];
+  const repaymentStatusOptions = ['Not Started', 'In Progress', 'Completed'];
 
   const displayedLoans = showAllLoans ? loans : loans.slice(0, displayLimit);
 
@@ -177,19 +160,19 @@ const Loans = () => {
     <div className="loans-container">
       <h2>Loan Management</h2>
 
-      <div className="add-loan-toggle" onClick={() => setShowAddLoanForm(!showAddLoanForm)}>
-        <FaPlus /> <span>{showAddLoanForm ? 'Cancel' : 'Add Loan'}</span>
+      <div className="add-loan-toggle" onClick={() => setShowForm(!showForm)}>
+        <FaPlus /> <span>{showForm ? 'Cancel' : 'Add Loan'}</span>
       </div>
 
-      {showAddLoanForm && (
-        <form onSubmit={handleAddLoan} className="loan-form">
-          <h3>Add New Loan</h3>
+      {showForm && (
+        <form onSubmit={handleSubmit} className="loan-form">
+          <h3>{editingLoan ? 'Edit Loan' : 'Add Loan'}</h3>
           
           <div className="form-group">
             <select
               name="borrower"
-              value={newLoan.borrower}
-              onChange={(e) => handleInputChange(e, setNewLoan)}
+              value={editingLoan?.borrower?._id ?? newLoan.borrower}
+              onChange={(e) => handleChange(e, editingLoan ? setEditingLoan : setNewLoan)}
               required
             >
               <option value="">Select Borrower</option>
@@ -199,203 +182,78 @@ const Loans = () => {
                 </option>
               ))}
             </select>
-            {errors.borrower && <span className="error">{errors.borrower}</span>}
           </div>
+
+          {['amount', 'purpose', 'interestRate', 'loanTerm'].map((field) => (
+            <div className="form-group" key={field}>
+              <input
+                name={field}
+                type={['amount', 'interestRate', 'loanTerm'].includes(field) ? 'number' : 'text'}
+                value={editingLoan?.[field] ?? newLoan[field]}
+                onChange={(e) => 
+                  ['amount', 'interestRate', 'loanTerm'].includes(field) 
+                    ? handleNumberChange(e, editingLoan ? setEditingLoan : setNewLoan)
+                    : handleChange(e, editingLoan ? setEditingLoan : setNewLoan)
+                }
+                placeholder={
+                  field.charAt(0).toUpperCase() + 
+                  field.slice(1).replace(/([A-Z])/g, ' $1')
+                }
+                required
+                min={['amount', 'interestRate', 'loanTerm'].includes(field) ? '1' : undefined}
+              />
+            </div>
+          ))}
 
           <div className="form-group">
             <input
-              type="text"
-              name="amount"
-              value={newLoan.amount}
-              onChange={(e) => handleNumberChange(e, setNewLoan)}
-              placeholder="Loan Amount"
-              required
-            />
-            {errors.amount && <span className="error">{errors.amount}</span>}
-          </div>
-
-          <div className="form-group">
-            <input
-              type="text"
-              name="purpose"
-              value={newLoan.purpose}
-              onChange={(e) => handleInputChange(e, setNewLoan)}
-              placeholder="Loan Purpose"
-              required
-            />
-            {errors.purpose && <span className="error">{errors.purpose}</span>}
-          </div>
-
-          <div className="form-group">
-            <input
-              type="text"
-              name="interestRate"
-              value={newLoan.interestRate}
-              onChange={(e) => handleNumberChange(e, setNewLoan)}
-              placeholder="Interest Rate (%)"
-              required
-            />
-            {errors.interestRate && <span className="error">{errors.interestRate}</span>}
-          </div>
-
-          <div className="form-group">
-            <input
-              type="text"
-              name="loanTerm"
-              value={newLoan.loanTerm}
-              onChange={(e) => handleNumberChange(e, setNewLoan)}
-              placeholder="Loan Term (months)"
-              required
-            />
-            {errors.loanTerm && <span className="error">{errors.loanTerm}</span>}
-          </div>
-
-          <div className="form-group">
-            <input
-              type="date"
               name="repaymentStartDate"
-              value={newLoan.repaymentStartDate}
-              onChange={(e) => handleInputChange(e, setNewLoan)}
+              type="date"
+              value={editingLoan?.repaymentStartDate ?? newLoan.repaymentStartDate}
+              onChange={(e) => handleChange(e, editingLoan ? setEditingLoan : setNewLoan)}
               placeholder="Repayment Start Date"
               required
             />
-            {errors.repaymentStartDate && <span className="error">{errors.repaymentStartDate}</span>}
           </div>
 
           <div className="form-group">
             <select
               name="status"
-              value={newLoan.status}
-              onChange={(e) => handleInputChange(e, setNewLoan)}
+              value={editingLoan?.status ?? newLoan.status}
+              onChange={(e) => handleChange(e, editingLoan ? setEditingLoan : setNewLoan)}
               required
             >
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </div>
-
-          <div className="form-actions">
-            <button type="submit">Add Loan</button>
-          </div>
-        </form>
-      )}
-
-      {editLoan && (
-        <form onSubmit={handleUpdateLoan} className="loan-form">
-          <h3>Edit Loan</h3>
-          
-          <div className="form-group">
-            <select
-              name="borrower"
-              value={editLoan.borrower?._id || editLoan.borrower}
-              onChange={(e) => handleInputChange(e, setEditLoan)}
-              required
-            >
-              <option value="">Select Borrower</option>
-              {borrowers.map(borrower => (
-                <option key={borrower._id} value={borrower._id}>
-                  {borrower.name} ({borrower.email})
-                </option>
+              {statusOptions.map(option => (
+                <option key={option} value={option}>{option}</option>
               ))}
             </select>
-            {errors.borrower && <span className="error">{errors.borrower}</span>}
           </div>
 
-          <div className="form-group">
-            <input
-              type="text"
-              name="amount"
-              value={editLoan.amount}
-              onChange={(e) => handleNumberChange(e, setEditLoan)}
-              placeholder="Loan Amount"
-              required
-            />
-            {errors.amount && <span className="error">{errors.amount}</span>}
-          </div>
-
-          <div className="form-group">
-            <input
-              type="text"
-              name="purpose"
-              value={editLoan.purpose}
-              onChange={(e) => handleInputChange(e, setEditLoan)}
-              placeholder="Loan Purpose"
-              required
-            />
-            {errors.purpose && <span className="error">{errors.purpose}</span>}
-          </div>
-
-          <div className="form-group">
-            <input
-              type="text"
-              name="interestRate"
-              value={editLoan.interestRate}
-              onChange={(e) => handleNumberChange(e, setEditLoan)}
-              placeholder="Interest Rate (%)"
-              required
-            />
-            {errors.interestRate && <span className="error">{errors.interestRate}</span>}
-          </div>
-
-          <div className="form-group">
-            <input
-              type="text"
-              name="loanTerm"
-              value={editLoan.loanTerm}
-              onChange={(e) => handleNumberChange(e, setEditLoan)}
-              placeholder="Loan Term (months)"
-              required
-            />
-            {errors.loanTerm && <span className="error">{errors.loanTerm}</span>}
-          </div>
-
-          <div className="form-group">
-            <input
-              type="date"
-              name="repaymentStartDate"
-              value={editLoan.repaymentStartDate}
-              onChange={(e) => handleInputChange(e, setEditLoan)}
-              placeholder="Repayment Start Date"
-              required
-            />
-            {errors.repaymentStartDate && <span className="error">{errors.repaymentStartDate}</span>}
-          </div>
-
-          <div className="form-group">
-            <select
-              name="status"
-              value={editLoan.status}
-              onChange={(e) => handleInputChange(e, setEditLoan)}
-              required
-            >
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <select
-              name="repaymentStatus"
-              value={editLoan.repaymentStatus}
-              onChange={(e) => handleInputChange(e, setEditLoan)}
-              required
-            >
-              <option value="Not Started">Not Started</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-            </select>
-          </div>
+          {editingLoan && (
+            <div className="form-group">
+              <select
+                name="repaymentStatus"
+                value={editingLoan.repaymentStatus}
+                onChange={(e) => handleChange(e, setEditingLoan)}
+                required
+              >
+                {repaymentStatusOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="form-actions">
-            <button type="submit">Update Loan</button>
-            <button type="button" onClick={() => setEditLoan(null)}>Cancel</button>
+            <button type="submit">{editingLoan ? 'Update' : 'Add'} Loan</button>
+            <button type="button" onClick={resetForm}>Cancel</button>
           </div>
         </form>
       )}
 
-      {loans.length === 0 ? (
+      {loading ? (
+        <p className="loading">Loading loans...</p>
+      ) : loans.length === 0 ? (
         <p>No loans found.</p>
       ) : (
         <div className="loans-table-container">
@@ -403,9 +261,9 @@ const Loans = () => {
             <thead>
               <tr>
                 <th>Borrower</th>
-                <th>Amount</th>
+                <th>Amount (M)</th> 
                 <th>Purpose</th>
-                <th>Interest Rate</th>
+                <th>Interest</th>
                 <th>Term</th>
                 <th>Status</th>
                 <th>Repayment</th>
@@ -418,14 +276,17 @@ const Loans = () => {
                 <tr key={loan._id}>
                   <td>
                     {loan.borrower?.name || 'Unknown Borrower'}
-                    <button 
-                      onClick={() => viewBorrower(loan.borrower?._id)}
-                      className="icon-button"
-                    >
-                      <FaUser title="View Borrower" />
-                    </button>
+                    {loan.borrower && (
+                      <button 
+                        onClick={() => viewBorrower(loan.borrower._id)}
+                        className="icon-button"
+                        aria-label="View Borrower"
+                      >
+                        <FaUser />
+                      </button>
+                    )}
                   </td>
-                  <td>${loan.amount?.toLocaleString()}</td>
+                  <td>M{loan.amount?.toLocaleString()}</td>
                   <td>{loan.purpose}</td>
                   <td>{loan.interestRate}%</td>
                   <td>{loan.loanTerm} months</td>
@@ -437,10 +298,19 @@ const Loans = () => {
                   </td>
                   <td>{new Date(loan.createdAt).toLocaleDateString()}</td>
                   <td>
-                    <button onClick={() => setEditLoan(loan)}>
+                    <button 
+                      onClick={() => {
+                        setEditingLoan(loan);
+                        setShowForm(true);
+                      }}
+                      aria-label="Edit"
+                    >
                       <FaEdit />
                     </button>
-                    <button onClick={() => handleDeleteLoan(loan._id)}>
+                    <button 
+                      onClick={() => deleteLoan(loan._id)}
+                      aria-label="Delete"
+                    >
                       <FaTrash />
                     </button>
                   </td>
@@ -448,9 +318,9 @@ const Loans = () => {
               ))}
             </tbody>
           </table>
-          
+
           {loans.length > displayLimit && (
-            <button 
+            <button
               className="show-toggle-button"
               onClick={() => setShowAllLoans(!showAllLoans)}
             >

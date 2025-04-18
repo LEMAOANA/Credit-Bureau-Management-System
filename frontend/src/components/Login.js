@@ -1,44 +1,81 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Login.css'; // Import the updated Login.css
 import { useAuth } from '../contexts/AuthContext';
-import { setupAxiosInterceptors } from '../utils/setupAxios';
+import axios from 'axios';
+import './Login.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { initialized, currentUser, login } = useAuth(); // Added login here
+
+  useEffect(() => {
+    if (initialized && currentUser) {
+      navigate('/Admin');
+    }
+  }, [initialized, currentUser, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+  
     try {
       const response = await axios.post('http://localhost:5001/api/auth/signin', {
         email,
-        password,
+        password
       });
-
-      const { user, token } = response.data;
-
-      // Set the token globally for Axios
-      setupAxiosInterceptors(token);
-
-      // Save user and token in context
-      login(user, token);
-
-      // Optionally save token to localStorage for persistence
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-
-      // Redirect to users page or homepage
-      navigate('/home');
-    } catch (error) {
-      console.error('Login error:', error.response ? error.response.data : error.message);
-      setMessage('Login failed. Please check your credentials.');
+  
+      console.log('Login response:', response.data);
+  
+      const { status, token, data } = response.data;
+      
+      if (status !== "success" || !token || !data) {
+        throw new Error('Invalid server response format');
+      }
+  
+      const user = {
+        id: data._id || data.id,
+        email: data.email,
+        // Include any additional user fields you need
+        ...data
+      };
+  
+      await login(user, token);
+      navigate('/Admin');
+      
+    } catch (err) {
+      console.error('Login error:', err);
+      let errorMessage = 'Login failed. Please try again.';
+      
+      if (err.response?.data) {
+        // Handle HTML error responses
+        if (typeof err.response.data === 'string' && err.response.data.includes('<!DOCTYPE html>')) {
+          errorMessage = 'Server error occurred';
+        } else {
+          errorMessage = err.response.data.message || JSON.stringify(err.response.data);
+        }
+      } else {
+        errorMessage = err.message || errorMessage;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (!initialized) {
+    return (
+      <div className="loading-screen">
+        <div className="spinner"></div>
+        <p>Initializing application...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page">
@@ -46,36 +83,51 @@ const Login = () => {
       <div className="login-container">
         <form onSubmit={handleSubmit} className="login-form">
           <h2>Login</h2>
+          
+          {error && <div className="alert alert-error">{error}</div>}
 
           <div className="input-group">
+            <label htmlFor="email">Email</label>
             <input
+              id="email"
               type="email"
-              placeholder="Email"
+              placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="username"
             />
           </div>
 
           <div className="input-group">
+            <label htmlFor="password">Password</label>
             <input
+              id="password"
               type="password"
-              placeholder="Password"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
             />
           </div>
 
-          <div className="button-group">
-            <button type="submit">Login</button>
-          </div>
-
-          {message && <p className="error-message">{message}</p>}
+          <button 
+            type="submit" 
+            className="login-button"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner-small"></span>
+                Logging in...
+              </>
+            ) : 'Login'}
+          </button>
 
           <div className="links">
-            <p><a href="/forgot-password">Forgot Password?</a></p>
-            <p>Don't have an account? <a href="/signup">Sign Up</a></p>
+            <a href="/forgot-password">Forgot password?</a>
+            <a href="/signup">Create new account</a>
           </div>
         </form>
       </div>

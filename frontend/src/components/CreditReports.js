@@ -11,89 +11,49 @@ const CreditReports = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedReport, setSelectedReport] = useState(null);
   const [showGenerateForm, setShowGenerateForm] = useState(false);
-  const [generateFormData, setGenerateFormData] = useState({
-    borrower: '',
-    loan: ''
-  });
+  const [generateFormData, setGenerateFormData] = useState({ borrower: '', loan: '' });
 
   useEffect(() => {
-    fetchCreditReports();
-    fetchBorrowers();
-    fetchLoans();
+    fetchData();
   }, []);
 
-  const fetchCreditReports = async () => {
+  const fetchData = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/credit-reports');
-      if (res.data.success) {
-        setCreditReports(res.data.data);
-      }
+      const [reports, borrowersData, loansData] = await Promise.all([
+        axios.get('http://localhost:5001/api/credit-reports'),
+        axios.get('http://localhost:5001/api/borrowers'),
+        axios.get('http://localhost:5001/api/loans')
+      ]);
+      if (reports.data.success) setCreditReports(reports.data.data);
+      if (borrowersData.data.success) setBorrowers(borrowersData.data.data);
+      if (loansData.data.success) setLoans(loansData.data.data);
     } catch (err) {
-      console.error("Error fetching credit reports:", err);
+      console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchBorrowers = async () => {
-    try {
-      const res = await axios.get('http://localhost:5001/api/borrowers');
-      if (res.data.success) {
-        setBorrowers(res.data.data);
-      }
-    } catch (err) {
-      console.error("Error fetching borrowers:", err);
-    }
-  };
-
-  const fetchLoans = async () => {
-    try {
-      const res = await axios.get('http://localhost:5001/api/loans');
-      if (res.data.success) {
-        setLoans(res.data.data);
-      }
-    } catch (err) {
-      console.error("Error fetching loans:", err);
     }
   };
 
   const generateCreditReport = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5001/api/credit-reports/generate', {
-        borrowerId: generateFormData.borrower,
-        loanId: generateFormData.loan
-      });
+      const { borrower, loan } = generateFormData;
+      const res = await axios.post('http://localhost:5001/api/credit-reports/generate', { borrowerId: borrower, loanId: loan });
       if (res.data.success) {
         setCreditReports([res.data.data, ...creditReports]);
         setShowGenerateForm(false);
         setGenerateFormData({ borrower: '', loan: '' });
-        alert("Credit report generated successfully!");
+        alert('Credit report generated successfully!');
       }
     } catch (err) {
-      console.error("Error generating credit report:", err);
-      alert("Error generating credit report: " + (err.response?.data?.message || err.message));
+      console.error('Error generating credit report:', err);
+      alert(`Error generating credit report: ${err.response?.data?.message || err.message}`);
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setGenerateFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const viewBorrower = (borrowerId) => {
-    console.log("View borrower:", borrowerId);
-    alert("This would navigate to the borrower details page");
-  };
-
-  const viewLoan = (loanId) => {
-    console.log("View loan:", loanId);
-    alert("This would navigate to the loan details page");
-  };
-
-  const viewRepayment = (repaymentId) => {
-    console.log("View repayment:", repaymentId);
-    alert("This would navigate to the repayment details page");
   };
 
   const filteredReports = creditReports.filter(report => {
@@ -136,7 +96,6 @@ const CreditReports = () => {
       {showGenerateForm && (
         <form onSubmit={generateCreditReport} className="generate-form">
           <h3>Generate Credit Report</h3>
-          
           <select
             name="borrower"
             value={generateFormData.borrower}
@@ -207,7 +166,7 @@ const CreditReports = () => {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        viewBorrower(report.borrower?._id);
+                        alert("This would navigate to the borrower details page");
                       }}
                       className="icon-button"
                     >
@@ -219,7 +178,7 @@ const CreditReports = () => {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        viewLoan(report.loan?._id);
+                        alert("This would navigate to the loan details page");
                       }}
                       className="icon-button"
                     >
@@ -300,7 +259,7 @@ const CreditReports = () => {
                         <span className="date">{new Date(repayment.paymentDate).toLocaleDateString()}</span>
                         <span className="type">{repayment.paymentType}</span>
                         <button 
-                          onClick={() => viewRepayment(repayment._id)}
+                          onClick={() => alert("This would navigate to the repayment details page")}
                           className="view-btn"
                         >
                           <FaFileAlt />

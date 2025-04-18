@@ -1,1 +1,201 @@
 
+/* Loans.css - Styled similar to Borrowers.css theme */
+
+/* ========== Layout & Base ========== */
+.loans-container {
+    display: flex;
+    flex-direction: column;
+    background-color: #1e293b;
+    padding: 2rem;
+    min-height: 100vh;
+  }
+  
+  .loans-title {
+    font-size: 2rem;
+    color: #10b981;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* ========== Toggle/Add Loan Section ========== */
+  .add-loan-toggle {
+    display: flex;
+    align-items: center;
+    color: #10b981;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .add-loan-toggle span {
+    margin-left: 8px;
+  }
+  
+  /* ========== Loan Form ========== */
+  .loan-form {
+    background-color: #1f2937;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+  }
+  
+  .loan-form label {
+    display: flex;
+    align-items: center;
+    color: #e5e7eb;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+  
+  .loan-form input,
+  .loan-form select,
+  .loan-form textarea {
+    width: 100%;
+    padding: 10px;
+    background-color: #2d3748;
+    border: 1px solid #10b981;
+    color: #f3f4f6;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    font-size: 16px;
+  }
+  
+  .loan-form .form-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+  }
+  
+  .loan-form button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.3s ease;
+  }
+  
+  .loan-form .btn-submit {
+    background-color: #10b981;
+    color: #fff;
+  }
+  
+  .loan-form .btn-submit:hover {
+    background-color: #3b82f6;
+  }
+  
+  .loan-form .btn-cancel {
+    background-color: #d1d5db;
+    color: #1f2937;
+  }
+  
+  .loan-form .btn-cancel:hover {
+    background-color: #9ca3af;
+  }
+  
+  /* ========== Loans Table ========== */
+  .loans-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+    background-color: #1e293b;
+  }
+  
+  .loans-table th,
+  .loans-table td {
+    padding: 1rem;
+    text-align: left;
+    font-size: 1rem;
+  }
+  
+  .loans-table th {
+    background-color: #10b981;
+    color: #ffffff;
+  }
+  
+  .loans-table td {
+    background-color: #2d3748;
+    border-bottom: 1px solid #1f2937;
+    color: #f3f4f6;
+  }
+  
+  .loans-table tr:hover {
+    background-color: #3b82f6;
+  }
+  
+  .loans-table button {
+    padding: 5px 10px;
+    background-color: #3b82f6;
+    color: #fff;
+    border: 1px solid #3b82f6;
+    border-radius: 5px;
+    margin: 0 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .loans-table button:hover {
+    background-color: #10b981;
+    border-color: #10b981;
+  }
+  
+  /* ========== Loading & Empty States ========== */
+  .loans-loading {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #94a3b8;
+    margin-top: 2rem;
+  }
+  
+  .loans-empty {
+    text-align: center;
+    font-style: italic;
+    color: #6b7280;
+    padding: 20px 0;
+  }
+  
+  /* ========== Responsive ========== */
+  @media (max-width: 768px) {
+    .loans-container {
+      padding: 1rem;
+    }
+  
+    .loan-form input,
+    .loan-form select,
+    .loan-form textarea {
+      font-size: 14px;
+      padding: 8px;
+    }
+  
+    .loans-table th,
+    .loans-table td {
+      padding: 0.75rem;
+    }
+  }
+  
+  /* ========== Table Container & Toggle Button ========== */
+  .loans-table-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .show-toggle-button {
+    margin: 15px auto;
+    padding: 8px 15px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    transition: background-color 0.3s;
+  }
+  
+  .show-toggle-button:hover {
+    background-color: #0b7dda;
+  }
+  

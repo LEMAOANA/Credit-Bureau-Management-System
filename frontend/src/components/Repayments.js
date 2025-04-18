@@ -1,370 +1,470 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './Repayments.css';
-import { FaPlus, FaEdit, FaTrash, FaSearch, FaUser, FaMoneyBillWave } from 'react-icons/fa';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import { 
+  FaPlus, FaEdit, FaTrash, 
+  FaChevronDown, FaChevronUp, 
+  FaTimes, FaUserAlt, FaInfoCircle
+} from 'react-icons/fa';
+
+const API_URL = 'http://localhost:5001/api';
+const PAYMENT_TYPES = ['Cash', 'Bank Transfer', 'Cheque', 'Transfer', 'Mobile Money'];
+const DISPLAY_LIMIT = 10;
 
 const Repayments = () => {
-  const initialRepaymentState = () => ({
-    borrower: '',
-    paymentAmount: '',
-    paymentDate: new Date(),
-    paymentType: 'Cash',
-    loan: ''
+  const [state, setState] = useState({
+    repayments: [],
+    approvedLoans: [],
+    loading: true,
+    error: null,
+    showForm: false,
+    showAllRepayments: false,
+    calculationData: null
   });
 
-  const [repayments, setRepayments] = useState([]);
-  const [borrowers, setBorrowers] = useState([]);
-  const [loans, setLoans] = useState([]);
-  const [filteredLoans, setFilteredLoans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [newRepayment, setNewRepayment] = useState(initialRepaymentState());
-  const [editRepayment, setEditRepayment] = useState(null);
-  const [showAddRepaymentForm, setShowAddRepaymentForm] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [formData, setFormData] = useState({
+    loan: '',
+    borrower: '',
+    borrowerName: '',
+    paymentAmount: '',
+    paymentDate: new Date().toISOString().split('T')[0],
+    paymentType: 'Cash',
+    paymentReference: '',
+    notes: ''
+  });
+
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
-    fetchRepayments();
-    fetchBorrowers();
-    fetchLoans();
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    if (newRepayment.borrower) {
-      const borrowerLoans = loans.filter(loan => loan.borrower._id === newRepayment.borrower);
-      setFilteredLoans(borrowerLoans);
-    } else {
-      setFilteredLoans([]);
-    }
-  }, [newRepayment.borrower, loans]);
-
-  const fetchRepayments = async () => {
+  const fetchData = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/repayments');
-      if (res.data.success) {
-        setRepayments(res.data.data);
-      }
-    } catch (err) {
-      console.error("Error fetching repayments:", err);
+      setState(prev => ({ ...prev, loading: true, error: null }));
+      
+      const [repaymentsRes, loansRes] = await Promise.all([
+        axios.get(`${API_URL}/repayments?populate=loan,borrower`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        }),
+        axios.get(`${API_URL}/loans?status=Approved&populate=borrower`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
+      ]);
+
+      setState(prev => ({
+        ...prev,
+        approvedLoans: loansRes.data?.data || loansRes.data || [],
+        repayments: (repaymentsRes.data?.data || repaymentsRes.data || [])
+          .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))
+      }));
+
+    } catch (error) {
+      handleError('Error fetching data:', error);
     } finally {
-      setLoading(false);
+      setState(prev => ({ ...prev, loading: false }));
     }
   };
 
-  const fetchBorrowers = async () => {
-    try {
-      const res = await axios.get('http://localhost:5001/api/borrowers');
-      if (res.data.success) {
-        setBorrowers(res.data.data);
-      }
-    } catch (err) {
-      console.error("Error fetching borrowers:", err);
+  const handleError = (context, error) => {
+    console.error(context, error);
+    let errorMessage = error.response?.data?.message || error.message;
+    
+    if (error.response?.data?.errors) {
+      errorMessage = Object.entries(error.response.data.errors)
+        .map(([field, err]) => `${field}: ${err.message}`)
+        .join('\n');
     }
+    
+    setState(prev => ({ ...prev, error: `${context} ${errorMessage}` }));
   };
 
-  const fetchLoans = async () => {
-    try {
-      const res = await axios.get('http://localhost:5001/api/loans');
-      if (res.data.success) {
-        setLoans(res.data.data);
-      }
-    } catch (err) {
-      console.error("Error fetching loans:", err);
-    }
+  const handleLoanChange = (e) => {
+    const loanId = e.target.value;
+    const selectedLoan = state.approvedLoans.find(loan => loan._id === loanId);
+    
+    setFormData(prev => ({
+      ...prev,
+      loan: loanId,
+      borrower: selectedLoan?.borrower?._id || selectedLoan?.borrower || '',
+      borrowerName: getBorrowerName(selectedLoan)
+    }));
+
+    if (loanId) calculatePayment(loanId);
   };
 
-  const handleInputChange = (e, stateSetter) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    stateSetter(prev => ({ ...prev, [name]: value }));
+    
+    if (name === 'paymentAmount' && value !== '' && isNaN(value)) {
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleDateChange = (date, stateSetter, fieldName) => {
-    stateSetter(prev => ({ ...prev, [fieldName]: date }));
+  const calculatePayment = (loanId) => {
+    const loan = state.approvedLoans.find(l => l._id === loanId);
+    if (!loan) return;
+    
+    const monthlyPrincipal = loan.amount / loan.loanTerm;
+    const monthlyInterest = (loan.amount * loan.interestRate) / (100 * 12);
+    const totalPayment = monthlyPrincipal + monthlyInterest;
+    
+    setState(prev => ({
+      ...prev,
+      calculationData: {
+        loanAmount: loan.amount,
+        interestRate: loan.interestRate,
+        loanTerm: loan.loanTerm,
+        monthlyPayment: totalPayment,
+        principalPortion: monthlyPrincipal,
+        interestPortion: monthlyInterest,
+        dueDate: new Date(loan.repaymentStartDate).toLocaleDateString()
+      }
+    }));
   };
 
-  const handleAddRepayment = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
-      const repaymentData = {
-        ...newRepayment,
-        paymentDate: newRepayment.paymentDate.toISOString()
-      };
-
-      const res = await axios.post('http://localhost:5001/api/repayments', repaymentData);
-      if (res.data.success) {
-        setRepayments([...repayments, res.data.data]);
-        setNewRepayment(initialRepaymentState());
-        setShowAddRepaymentForm(false);
-        alert("Repayment recorded successfully!");
-      } else {
-        alert("Failed to add repayment: " + res.data.error);
+      if (!formData.loan) throw new Error('Please select a loan');
+      if (!formData.paymentAmount || isNaN(formData.paymentAmount)) {
+        throw new Error('Please enter a valid payment amount');
       }
-    } catch (err) {
-      console.error("Error adding repayment:", err);
-      alert("There was an error adding the repayment: " + (err.response?.data?.message || err.message));
-    }
-  };
+      if (!formData.paymentDate) throw new Error('Please select a payment date');
 
-  const handleUpdateRepayment = async (e) => {
-    e.preventDefault();
-    try {
-      const repaymentData = {
-        ...editRepayment,
-        paymentDate: editRepayment.paymentDate.toISOString()
+      const payload = {
+        ...formData,
+        paymentAmount: parseFloat(formData.paymentAmount),
+        paymentDate: new Date(formData.paymentDate).toISOString(),
+        ...(formData.paymentReference && { paymentReference: formData.paymentReference }),
+        ...(formData.notes && { notes: formData.notes })
       };
 
-      const res = await axios.put(`http://localhost:5001/api/repayments/${editRepayment._id}`, repaymentData);
-      if (res.data.success) {
-        setRepayments(repayments.map(repayment => 
-          repayment._id === editRepayment._id ? res.data.data : repayment
-        ));
-        setEditRepayment(null);
-        alert("Repayment updated successfully!");
+      const response = await axios[editingId ? 'put' : 'post'](
+        `${API_URL}/repayments${editingId ? `/${editingId}` : ''}`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if (response.data.success) {
+        await fetchData();
+        resetForm();
       } else {
-        alert("Failed to update repayment: " + res.data.error);
+        throw new Error(response.data.message || 'Operation failed');
       }
     } catch (error) {
-      console.error("Error updating repayment:", error);
-      alert("There was an error updating the repayment.");
+      handleError('Failed to save repayment:', error);
     }
   };
 
-  const handleDeleteRepayment = async (repaymentId) => {
-    if (!window.confirm("Are you sure you want to delete this repayment record?")) return;
+  const resetForm = () => {
+    setFormData({
+      loan: '',
+      borrower: '',
+      borrowerName: '',
+      paymentAmount: '',
+      paymentDate: new Date().toISOString().split('T')[0],
+      paymentType: 'Cash',
+      paymentReference: '',
+      notes: ''
+    });
+    setEditingId(null);
+    setState(prev => ({ ...prev, showForm: false, calculationData: null }));
+  };
+
+  const editRepayment = (repayment) => {
+    const loan = state.approvedLoans.find(l => l._id === (repayment.loan?._id || repayment.loan));
+    
+    setFormData({
+      loan: repayment.loan?._id || repayment.loan,
+      borrower: repayment.borrower?._id || repayment.borrower,
+      borrowerName: getBorrowerName(loan),
+      paymentAmount: repayment.paymentAmount,
+      paymentDate: repayment.paymentDate.split('T')[0],
+      paymentType: repayment.paymentType,
+      paymentReference: repayment.paymentReference,
+      notes: repayment.notes
+    });
+    
+    setEditingId(repayment._id);
+    setState(prev => ({ ...prev, showForm: true }));
+    calculatePayment(repayment.loan?._id || repayment.loan);
+  };
+
+  const deleteRepayment = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this repayment?')) return;
 
     try {
-      const res = await axios.delete(`http://localhost:5001/api/repayments/${repaymentId}`);
-      if (res.data.success) {
-        setRepayments(repayments.filter(repayment => repayment._id !== repaymentId));
-      }
-    } catch (err) {
-      console.error("Error deleting repayment:", err);
-      alert("Error deleting repayment: " + (err.response?.data?.message || err.message));
+      await axios.delete(`${API_URL}/repayments/${id}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      setState(prev => ({
+        ...prev,
+        repayments: prev.repayments.filter(r => r._id !== id)
+      }));
+    } catch (error) {
+      handleError('Error deleting repayment:', error);
     }
   };
 
-  const viewBorrower = (borrowerId) => {
-    console.log("View borrower:", borrowerId);
-    alert("This would navigate to the borrower details page");
+  const getBorrowerName = (loan) => {
+    if (!loan) return 'Unknown Borrower';
+    if (loan.borrower && typeof loan.borrower === 'object') {
+      return loan.borrower.name;
+    }
+    return 'Unknown Borrower';
   };
 
-  const viewLoan = (loanId) => {
-    console.log("View loan:", loanId);
-    alert("This would navigate to the loan details page");
+  const getLoanDisplayText = (loan) => {
+    if (!loan) return 'Unknown Loan';
+    return `M${loan.amount?.toLocaleString()} @ ${loan.interestRate}% (${loan.status})`;
   };
 
-  const filteredRepayments = repayments.filter(repayment => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      repayment.borrower?.name?.toLowerCase().includes(searchLower) ||
-      repayment.loan?.purpose?.toLowerCase().includes(searchLower) ||
-      repayment.paymentType.toLowerCase().includes(searchLower) ||
-      repayment.paymentAmount.toString().includes(searchTerm) ||
-      new Date(repayment.paymentDate).toLocaleDateString().includes(searchTerm)
-    );
-  });
-
-  if (loading) return <p className="loading">Loading repayments...</p>;
+  const displayedRepayments = state.showAllRepayments 
+    ? state.repayments 
+    : state.repayments.slice(0, DISPLAY_LIMIT);
 
   return (
     <div className="repayments-container">
-      <h2>Repayment Management</h2>
+      <h2 className="repayments-title">
+        <FaInfoCircle style={{ marginRight: '0.5rem' }} />
+        Repayment Management
+      </h2>
 
-      <div className="search-bar">
-        <FaSearch />
-        <input
-          type="text"
-          placeholder="Search repayments..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      <div className="add-repayment-toggle" onClick={() => setShowAddRepaymentForm(!showAddRepaymentForm)}>
-        <FaPlus size={30} />
-        <span>Add Repayment</span>
-      </div>
-
-      {/* Add Repayment Form */}
-      {showAddRepaymentForm && (
-        <form onSubmit={handleAddRepayment}>
-          <h3>Record New Repayment</h3>
-          
-          <select
-            name="borrower"
-            value={newRepayment.borrower}
-            onChange={(e) => handleInputChange(e, setNewRepayment)}
-            required
+      {state.error && (
+        <div className="error-message">
+          <div>{state.error}</div>
+          <button 
+            onClick={() => setState(prev => ({ ...prev, error: null }))} 
+            className="btn btn-cancel"
           >
-            <option value="">Select Borrower</option>
-            {borrowers.map(borrower => (
-              <option key={borrower._id} value={borrower._id}>
-                {borrower.name} ({borrower.email})
-              </option>
-            ))}
-          </select>
+            <FaTimes />
+          </button>
+        </div>
+      )}
 
-          <select
-            name="loan"
-            value={newRepayment.loan}
-            onChange={(e) => handleInputChange(e, setNewRepayment)}
-            required
-            disabled={!newRepayment.borrower}
-          >
-            <option value="">Select Loan</option>
-            {filteredLoans.map(loan => (
-              <option key={loan._id} value={loan._id}>
-                ${loan.amount} - {loan.purpose} ({loan.status})
-              </option>
-            ))}
-          </select>
+      <button 
+        className="btn btn-secondary" 
+        onClick={() => setState(prev => ({ 
+          ...prev, 
+          showForm: !prev.showForm,
+          calculationData: null
+        }))}
+      >
+        <FaPlus /> 
+        <span>{state.showForm ? 'Cancel' : 'Add Repayment'}</span>
+      </button>
 
-          <input
-            type="number"
-            name="paymentAmount"
-            value={newRepayment.paymentAmount}
-            onChange={(e) => handleInputChange(e, setNewRepayment)}
-            placeholder="Payment Amount"
-            min="1"
-            step="0.01"
-            required
-          />
+      {state.showForm && (
+        <form onSubmit={handleSubmit} className="repayment-form">
+          <h3>{editingId ? 'Edit Repayment' : 'Add New Repayment'}</h3>
 
-          <div className="date-picker-container">
-            <label>Payment Date:</label>
-            <DatePicker
-              selected={newRepayment.paymentDate}
-              onChange={(date) => handleDateChange(date, setNewRepayment, 'paymentDate')}
-              dateFormat="MMMM d, yyyy"
+          <div className="form-group">
+            <label>Select Approved Loan</label>
+            <select
+              name="loan"
+              value={formData.loan}
+              onChange={handleLoanChange}
               required
-            />
+            >
+              <option value="">Select a Loan</option>
+              {state.approvedLoans.map((loan) => (
+                <option key={loan._id} value={loan._id}>
+                  {getLoanDisplayText(loan)}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <select
-            name="paymentType"
-            value={newRepayment.paymentType}
-            onChange={(e) => handleInputChange(e, setNewRepayment)}
-            required
-          >
-            <option value="Cash">Cash</option>
-            <option value="Bank Transfer">Bank Transfer</option>
-            <option value="Check">Check</option>
-            <option value="Mobile Payment">Mobile Payment</option>
-            <option value="Other">Other</option>
-          </select>
+          {formData.loan && (
+            <>
+              <div className="form-group">
+                <label>Borrower</label>
+                <input 
+                  type="text" 
+                  value={formData.borrowerName} 
+                  readOnly 
+                />
+              </div>
 
-          <button type="submit">Record Repayment</button>
+              <div className="form-group">
+                <label>Payment Amount (M)</label>
+                <input 
+                  type="number" 
+                  name="paymentAmount"
+                  value={formData.paymentAmount}
+                  onChange={handleInputChange} 
+                  required
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Payment Date</label>
+                <input 
+                  type="date" 
+                  name="paymentDate" 
+                  value={formData.paymentDate}
+                  onChange={handleInputChange} 
+                  required 
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Payment Type</label>
+                <select 
+                  name="paymentType" 
+                  value={formData.paymentType} 
+                  onChange={handleInputChange}
+                >
+                  {PAYMENT_TYPES.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Payment Reference</label>
+                <input 
+                  type="text" 
+                  name="paymentReference"
+                  value={formData.paymentReference} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Notes</label>
+                <textarea 
+                  name="notes"
+                  value={formData.notes} 
+                  onChange={handleInputChange} 
+                  rows="3"
+                />
+              </div>
+
+              {state.calculationData && (
+                <div className="calculation-result">
+                  <h4>Loan Calculation Details</h4>
+                  <div><strong>Loan Amount:</strong> M{state.calculationData.loanAmount?.toLocaleString()}</div>
+                  <div><strong>Interest Rate:</strong> {state.calculationData.interestRate}%</div>
+                  <div><strong>Loan Term:</strong> {state.calculationData.loanTerm} months</div>
+                  <div><strong>Monthly Payment:</strong> M{state.calculationData.monthlyPayment?.toFixed(2)}</div>
+                  <div><strong>Principal Portion:</strong> M{state.calculationData.principalPortion?.toFixed(2)}</div>
+                  <div><strong>Interest Portion:</strong> M{state.calculationData.interestPortion?.toFixed(2)}</div>
+                  <div><strong>Next Due Date:</strong> {state.calculationData.dueDate}</div>
+                </div>
+              )}
+
+              <div className="form-buttons">
+                <button 
+                  type="button" 
+                  className="btn btn-cancel"
+                  onClick={resetForm}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                >
+                  {editingId ? 'Update' : 'Save'} Repayment
+                </button>
+              </div>
+            </>
+          )}
         </form>
       )}
 
-      {/* Edit Repayment Form */}
-      {editRepayment && (
-        <form onSubmit={handleUpdateRepayment}>
-          <h3>Edit Repayment</h3>
-          
-          <div className="form-field">
-            <label>Borrower:</label>
-            <p>{editRepayment.borrower?.name || 'Loading...'}</p>
-          </div>
-
-          <div className="form-field">
-            <label>Loan:</label>
-            <p>{editRepayment.loan?.purpose || 'Loading...'} (${editRepayment.loan?.amount})</p>
-          </div>
-
-          <input
-            type="number"
-            name="paymentAmount"
-            value={editRepayment.paymentAmount}
-            onChange={(e) => handleInputChange(e, setEditRepayment)}
-            min="1"
-            step="0.01"
-            required
-          />
-
-          <div className="date-picker-container">
-            <label>Payment Date:</label>
-            <DatePicker
-              selected={new Date(editRepayment.paymentDate)}
-              onChange={(date) => handleDateChange(date, setEditRepayment, 'paymentDate')}
-              dateFormat="MMMM d, yyyy"
-              required
-            />
-          </div>
-
-          <select
-            name="paymentType"
-            value={editRepayment.paymentType}
-            onChange={(e) => handleInputChange(e, setEditRepayment)}
-            required
-          >
-            <option value="Cash">Cash</option>
-            <option value="Bank Transfer">Bank Transfer</option>
-            <option value="Check">Check</option>
-            <option value="Mobile Payment">Mobile Payment</option>
-            <option value="Other">Other</option>
-          </select>
-
-          <button type="submit">Update Repayment</button>
-          <button type="button" onClick={() => setEditRepayment(null)}>Cancel</button>
-        </form>
-      )}
-
-      {/* Repayments Table */}
-      {filteredRepayments.length === 0 ? (
-        <p>No repayments found{searchTerm ? ` matching "${searchTerm}"` : ''}.</p>
+      {state.loading ? (
+        <div className="loading">Loading repayments...</div>
       ) : (
-        <table className="repayments-table">
-          <thead>
-            <tr>
-              <th>Borrower</th>
-              <th>Loan</th>
-              <th>Amount</th>
-              <th>Date</th>
-              <th>Type</th>
-              <th>Recorded At</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRepayments.map(repayment => (
-              <tr key={repayment._id}>
-                <td>
-                  {repayment.borrower?.name || 'Unknown Borrower'}
-                  <button 
-                    onClick={() => viewBorrower(repayment.borrower?._id)}
-                    className="icon-button"
-                  >
-                    <FaUser title="View Borrower" />
-                  </button>
-                </td>
-                <td>
-                  {repayment.loan?.purpose || 'Unknown Loan'}
-                  <button 
-                    onClick={() => viewLoan(repayment.loan?._id)}
-                    className="icon-button"
-                  >
-                    <FaMoneyBillWave title="View Loan" />
-                  </button>
-                </td>
-                <td>${repayment.paymentAmount?.toLocaleString()}</td>
-                <td>{new Date(repayment.paymentDate).toLocaleDateString()}</td>
-                <td>{repayment.paymentType}</td>
-                <td>{new Date(repayment.createdAt).toLocaleString()}</td>
-                <td className="actions">
-                  <button onClick={() => setEditRepayment(repayment)}>
-                    <FaEdit title="Edit" />
-                  </button>
-                  <button onClick={() => handleDeleteRepayment(repayment._id)}>
-                    <FaTrash title="Delete" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <>
+          {state.repayments.length > 0 ? (
+            <div className="table-container">
+              <table className="repayment-table">
+                <thead>
+                  <tr>
+                    <th>Payment Date</th>
+                    <th>Loan Details</th>
+                    <th>Borrower</th>
+                    <th>Amount (M)</th>
+                    <th>Type</th>
+                    <th>Reference</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedRepayments.map((repayment) => (
+                    <tr key={repayment._id}>
+                      <td>{new Date(repayment.paymentDate).toLocaleDateString()}</td>
+                      <td>{getLoanDisplayText(repayment.loan)}</td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <FaUserAlt /> 
+                          {repayment.borrower?.name || 'Unknown'}
+                        </div>
+                      </td>
+                      <td>M{repayment.paymentAmount?.toFixed(2)}</td>
+                      <td>{repayment.paymentType}</td>
+                      <td>{repayment.paymentReference || 'N/A'}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button 
+                            className="action-btn edit-btn"
+                            onClick={() => editRepayment(repayment)}
+                          >
+                            <FaEdit /> Edit
+                          </button>
+                          <button 
+                            className="action-btn delete-btn"
+                            onClick={() => deleteRepayment(repayment._id)}
+                          >
+                            <FaTrash /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {state.repayments.length > DISPLAY_LIMIT && (
+                <button 
+                  className="btn btn-secondary"
+                  style={{ marginTop: '1rem' }}
+                  onClick={() => setState(prev => ({ 
+                    ...prev, 
+                    showAllRepayments: !prev.showAllRepayments 
+                  }))}
+                >
+                  {state.showAllRepayments ? (
+                    <>
+                      <FaChevronUp /> Show Less
+                    </>
+                  ) : (
+                    <>
+                      <FaChevronDown /> Show More ({state.repayments.length - DISPLAY_LIMIT} more)
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="loading" style={{ textAlign: 'center', padding: '2rem' }}>
+              No repayments found
+            </div>
+          )}
+        </>
       )}
     </div>
   );

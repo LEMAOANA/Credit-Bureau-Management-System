@@ -19,7 +19,10 @@ const Borrowers = () => {
       phone: '',
       loanAmount: '',
       loanPurpose: '',
-      nationalId: ''
+      nationalId: '',
+      repaymentStartDate: '',
+      loanTerm: '',
+      interestRate: ''
     };
   }
 
@@ -31,8 +34,7 @@ const Borrowers = () => {
     try {
       const response = await axios.get('http://localhost:5001/api/borrowers');
       if (response.data.success) {
-        // Sort borrowers by createdAt date (newest first)
-        const sortedBorrowers = response.data.data.sort((a, b) => 
+        const sortedBorrowers = response.data.data.sort((a, b) =>
           new Date(b.createdAt) - new Date(a.createdAt)
         );
         setBorrowers(sortedBorrowers);
@@ -62,7 +64,7 @@ const Borrowers = () => {
     try {
       const response = await axios.post('http://localhost:5001/api/borrowers', newBorrower);
       if (response.data.success) {
-        setBorrowers([response.data.data, ...borrowers]); // Add new borrower at beginning
+        setBorrowers([response.data.data, ...borrowers]);
         resetForm();
         alert('Borrower added successfully!');
       }
@@ -109,7 +111,6 @@ const Borrowers = () => {
     alert(`Redirecting to loans for borrower ID: ${id}`);
   };
 
-  // Determine which borrowers to display based on showAllBorrowers state
   const displayedBorrowers = showAllBorrowers ? borrowers : borrowers.slice(0, displayLimit);
 
   return (
@@ -143,6 +144,32 @@ const Borrowers = () => {
             required
             min="100"
           />
+          <input
+            name="repaymentStartDate"
+            type="date"
+            value={editingBorrower ? editingBorrower.repaymentStartDate : newBorrower.repaymentStartDate}
+            onChange={(e) => handleChange(e, editingBorrower ? setEditingBorrower : setNewBorrower)}
+            placeholder="Repayment Start Date"
+            required
+          />
+          <input
+            name="loanTerm"
+            type="number"
+            value={editingBorrower ? editingBorrower.loanTerm : newBorrower.loanTerm}
+            onChange={(e) => handleChange(e, editingBorrower ? setEditingBorrower : setNewBorrower)}
+            placeholder="Loan Term (months)"
+            required
+            min="1"
+          />
+          <input
+            name="interestRate"
+            type="number"
+            value={editingBorrower ? editingBorrower.interestRate : newBorrower.interestRate}
+            onChange={(e) => handleChange(e, editingBorrower ? setEditingBorrower : setNewBorrower)}
+            placeholder="Interest Rate (%)"
+            required
+            min="0"
+          />
           <div className="form-actions">
             <button type="submit">{editingBorrower ? 'Update' : 'Add'} Borrower</button>
             {editingBorrower && <button type="button" onClick={resetForm}>Cancel</button>}
@@ -162,7 +189,7 @@ const Borrowers = () => {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Phone</th>
-                <th>Loan</th>
+                <th>Loan (M)</th>
                 <th>Purpose</th>
                 <th>Created</th>
                 <th>Actions</th>
@@ -186,9 +213,9 @@ const Borrowers = () => {
               ))}
             </tbody>
           </table>
-          
+
           {borrowers.length > displayLimit && (
-            <button 
+            <button
               className="show-toggle-button"
               onClick={() => setShowAllBorrowers(!showAllBorrowers)}
             >
