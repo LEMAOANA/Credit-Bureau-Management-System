@@ -1,6 +1,38 @@
-/* Borrowers.css - Styled similar to Users.css theme */
+/* Borrowers.css - Combined Old and New Styles */
 
-/* ========== Layout & Base ========== */
+/* ========== Variables (NEW) ========== */
+:root {
+  --primary-color: #10b981;
+  --primary-dark: #0d9e6e;
+  --secondary-color: #3b82f6;
+  --secondary-dark: #2563eb;
+  --danger-color: #ef4444;
+  --danger-dark: #dc2626;
+  --warning-color: #f59e0b;
+  --success-color: #10b981;
+  --text-light: #f3f4f6;
+  --text-dark: #1f2937;
+  --bg-dark: #1e293b;
+  --bg-darker: #1f2937;
+  --bg-light: #2d3748;
+  --border-color: #374151;
+  --shadow-color: rgba(16, 185, 129, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: var(--text-light);
+  background-color: var(--bg-dark);
+}
+
+/* ========== Layout & Base (OLD) ========== */
 .borrowers-container {
   display: flex;
   flex-direction: column;
@@ -9,14 +41,23 @@
   min-height: 100vh;
 }
 
+/* Also add max-width from NEW style */
+.borrowers-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 .borrowers-title {
   font-size: 2rem;
   color: #10b981;
   font-weight: bold;
   margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-/* ========== Toggle/Add Borrower Section ========== */
+/* ========== Toggle/Add Borrower Section (OLD) ========== */
 .add-borrower-toggle {
   display: flex;
   align-items: center;
@@ -30,7 +71,7 @@
   margin-left: 8px;
 }
 
-/* ========== Borrower Form ========== */
+/* ========== Borrower Form (OLD) ========== */
 .borrower-form {
   background-color: #1f2937;
   padding: 20px;
@@ -92,7 +133,7 @@
   background-color: #9ca3af;
 }
 
-/* ========== Borrowers Table ========== */
+/* ========== Borrowers Table (OLD) ========== */
 .borrowers-table {
   width: 100%;
   border-collapse: collapse;
@@ -138,7 +179,7 @@
   border-color: #10b981;
 }
 
-/* ========== Loading & Empty States ========== */
+/* ========== Loading & Empty States (OLD) ========== */
 .borrowers-loading {
   text-align: center;
   font-size: 1.2rem;
@@ -153,7 +194,7 @@
   padding: 20px 0;
 }
 
-/* ========== Responsive ========== */
+/* ========== Responsive (OLD) ========== */
 @media (max-width: 768px) {
   .borrowers-container {
     padding: 1rem;
@@ -171,7 +212,8 @@
     padding: 0.75rem;
   }
 }
-/* Add these styles to your existing Borrowers.css */
+
+/* ========== Extra Controls (OLD ADDITION) ========== */
 .borrowers-table-container {
   margin-top: 20px;
   display: flex;
@@ -195,4 +237,191 @@
 
 .show-toggle-button:hover {
   background-color: #0b7dda;
+}
+
+/* ========== NEW SECTION: Stats Cards ========== */
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background-color: var(--bg-darker);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-light);
+  margin-bottom: 0.5rem;
+}
+
+.stat-card p {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+.stat-card.total {
+  border-left: 4px solid var(--secondary-color);
+}
+
+.stat-card.active {
+  border-left: 4px solid var(--primary-color);
+}
+
+.stat-card.overdue {
+  border-left: 4px solid var(--danger-color);
+}
+
+/* ========== NEW SECTION: Controls Section ========== */
+.controls-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.search-filter-container {
+  display: flex;
+  gap: 1rem;
+  flex-grow: 1;
+}
+
+.search-box {
+  position: relative;
+  flex-grow: 1;
+  max-width: 400px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  background-color: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-light);
+  font-size: 0.95rem;
+  transition: border-color 0.3s;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+  pointer-events: none;
+}
+/* Export Button Styles */
+.export-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: auto;
+}
+
+.export-button:hover {
+  background-color: #3e8e41;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Adjust the controls section to accommodate the new button */
+.controls-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.search-filter-container {
+  display: flex;
+  gap: 1rem;
+  flex-grow: 1;
+}
+/* Pagination Styles */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: var(--bg-darker);
+  border-radius: 8px;
+}
+
+.pagination button {
+  padding: 0.5rem 1rem;
+  background-color: var(--bg-light);
+  color: var(--text-light);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination button.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  font-weight: bold;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .pagination {
+    flex-wrap: wrap;
+  }
+  
+  .page-numbers {
+    order: 1;
+    width: 100%;
+    justify-content: center;
+    margin: 0.5rem 0;
+  }
 }

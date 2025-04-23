@@ -1,75 +1,148 @@
-/* Repayments.css - Optimized and Consistent Styling */
-
-/* ========== Color Variables ========== */
+/* ========== Base Styles ========== */
 :root {
-  /* Primary Colors */
-  --primary: #10b981;
-  --primary-hover: #0d9e6e;
-  --primary-light: rgba(16, 185, 129, 0.1);
-  
-  /* Secondary Colors */
-  --secondary: #3b82f6;
-  --secondary-hover: #2563eb;
-  
-  /* Background Colors */
-  --background-dark: #1e293b;
-  --background-medium: #1f2937;
-  --background-light: #2d3748;
-  
-  /* Text Colors */
-  --text-light: #f3f4f6;
-  --text-medium: #e5e7eb;
-  --text-dark: #94a3b8;
-  
-  /* Status Colors */
-  --error: #ef4444;
-  --error-dark: #dc2626;
-  --cancel: #d1d5db;
-  --cancel-hover: #9ca3af;
-  
-  /* Border Colors */
-  --border: #10b981;
-  --table-border: #1f2937;
+  --bg-dark: #1F2937;
+  --bg-card: #111827;
+  --bg-medium: #1E293B;
+  --bg-light: #374151;
+  --text-light: #F3F4F6;
+  --text-medium: #E5E7EB;
+  --text-muted: #9CA3AF;
+  --input-bg: #1E293B;
+  --input-border: #374151;
+  --input-focus: #3B82F6;
+  --accent: #3B82F6;
+  --accent-hover: #2563EB;
+  --error: #EF4444;
+  --error-dark: #DC2626;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --radius: 0.75rem;
+  --transition: 0.3s ease;
+  --shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 /* ========== Base Layout ========== */
 .repayments-container {
   display: flex;
   flex-direction: column;
-  background-color: var(--background-dark);
-  padding: 2rem;
-  min-height: 100vh;
+  background-color: var(--bg-dark);
   color: var(--text-light);
+  min-height: 100vh;
+  padding: 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.repayments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .repayments-title {
   font-size: 2rem;
-  color: var(--primary);
-  font-weight: bold;
-  margin-bottom: 1.5rem;
+  color: #10B981;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* ========== Filters Panel ========== */
+.filters-panel {
+  background-color: var(--bg-card);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--input-border);
+}
+
+.filter-group {
+  margin-bottom: 1rem;
+}
+
+.filter-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-medium);
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
+.filter-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-row .filter-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-group input,
+.filter-group select {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-light);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+  outline: none;
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
 /* ========== Form Styles ========== */
 .repayment-form {
-  background-color: var(--background-medium);
+  background-color: var(--bg-card);
   padding: 1.5rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius);
   margin-bottom: 2rem;
-  box-shadow: 0 0.25rem 0.625rem rgba(16, 185, 129, 0.2);
-  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--input-border);
 }
 
 .repayment-form h3 {
-  color: var(--primary);
+  color: var(--accent);
   margin-bottom: 1.25rem;
   font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+  margin-bottom: 0;
 }
 
 .form-group {
   margin-bottom: 1rem;
+  position: relative;
 }
 
 .form-group label {
@@ -84,19 +157,31 @@
 .form-group textarea {
   width: 100%;
   padding: 0.75rem;
-  background-color: var(--background-light);
-  border: 1px solid var(--border);
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
   color: var(--text-light);
-  border-radius: 0.375rem;
+  border-radius: var(--radius);
   font-size: 1rem;
-  transition: border-color 0.2s ease;
+  transition: var(--transition);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: var(--secondary);
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.form-group input.error,
+.form-group select.error {
+  border-color: var(--error);
+}
+
+.error-text {
+  color: var(--error);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
 }
 
 /* ========== Button System ========== */
@@ -106,32 +191,31 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  border-radius: 0.375rem;
+  border-radius: var(--radius);
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition);
   border: none;
-  text-transform: capitalize;
 }
 
 /* Button Variants */
 .btn-primary {
-  background-color: var(--primary);
+  background-color: var(--accent);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--accent-hover);
 }
 
 .btn-secondary {
-  background-color: var(--secondary);
-  color: white;
+  background-color: var(--bg-light);
+  color: var(--text-light);
 }
 
 .btn-secondary:hover {
-  background-color: var(--secondary-hover);
+  background-color: var(--input-border);
 }
 
 .btn-danger {
@@ -144,12 +228,12 @@
 }
 
 .btn-cancel {
-  background-color: var(--cancel);
-  color: var(--background-medium);
+  background-color: var(--bg-light);
+  color: var(--text-light);
 }
 
 .btn-cancel:hover {
-  background-color: var(--cancel-hover);
+  background-color: var(--input-border);
 }
 
 /* Button Sizes */
@@ -163,58 +247,88 @@
   border-radius: 50%;
   min-width: 2.5rem;
   min-height: 2.5rem;
-}
-
-/* Special Buttons */
-.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background-color: transparent;
-  color: var(--primary);
-  border: 1px solid var(--primary);
+  border: none;
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: var(--transition);
 }
 
-.toggle-btn:hover {
-  background-color: var(--primary-light);
+.btn-icon:hover {
+  background-color: var(--bg-light);
 }
 
-/* Button Groups */
-.form-actions {
+.btn-icon.edit-icon {
+  color: var(--accent);
+}
+
+.btn-icon.edit-icon:hover {
+  color: var(--accent-hover);
+}
+
+.btn-icon.delete-icon {
+  color: var(--error);
+}
+
+.btn-icon.delete-icon:hover {
+  color: var(--error-dark);
+}
+
+/* Form Buttons */
+.form-buttons {
+  
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 1.5rem;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
+/* ========== Table Styles ========== */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
 }
 
-/* ========== Table Styles ========== */
+.table-summary {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
 .repayment-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  margin: 2rem 0;
-  background-color: var(--background-dark);
-  border-radius: 0.5rem;
+  background-color: var(--bg-card);
+  border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .repayment-table th {
-  background-color: var(--primary);
-  color: white;
+ 
   padding: 1rem;
   text-align: left;
   font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition);
+}
+
+.repayment-table th:hover {
+  background-color: var(--accent-hover);
 }
 
 .repayment-table td {
-  background-color: var(--background-light);
+  background-color: var(--bg-medium);
   padding: 1rem;
-  border-bottom: 1px solid var(--table-border);
+  border-bottom: 1px solid var(--input-border);
   color: var(--text-light);
-  transition: background-color 0.2s ease;
+  transition: var(--transition);
 }
 
 .repayment-table tr:last-child td {
@@ -222,15 +336,150 @@
 }
 
 .repayment-table tr:hover td {
-  background-color: var(--secondary);
+  background-color: var(--bg-light);
+}
+
+.payment-type {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.payment-type.cash {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+.payment-type.bank-transfer {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--accent);
+}
+
+.payment-type.cheque {
+  background-color: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.payment-type.transfer {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+}
+
+.payment-type.mobile-money {
+  background-color: rgba(236, 72, 153, 0.1);
+  color: #ec4899;
+}
+
+/* ========== Calculation Result ========== */
+.calculation-result {
+  background-color: var(--bg-card);
+  padding: 1rem;
+  border-radius: var(--radius);
+  margin: 1rem 0;
+  border: 1px solid var(--input-border);
+}
+
+.calculation-result h4 {
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.calculation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.calculation-grid div {
+  margin-bottom: 0;
+}
+
+.calculation-result strong {
+  color: var(--text-medium);
+}
+
+/* ========== Charts Container ========== */
+.charts-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.chart {
+  background-color: var(--bg-card);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--input-border);
+}
+
+/* ========== Pagination ========== */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.pagination-button {
+  padding: 0.5rem 1rem;
+  background-color: var(--bg-medium);
+  border: 1px solid var(--input-border);
+  color: var(--text-light);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: var(--bg-light);
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.page-number {
+  min-width: 2.5rem;
+  padding: 0.5rem;
+  background-color: var(--bg-medium);
+  border: 1px solid var(--input-border);
+  color: var(--text-light);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+
+.page-number:hover {
+  background-color: var(--bg-light);
+}
+
+.page-number.active {
+  background-color: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
 
 /* ========== Utility Components ========== */
 .error-message {
-  background-color: var(--background-medium);
+  background-color: var(--bg-card);
   color: var(--text-light);
   padding: 1rem;
-  border-radius: 0.375rem;
+  border-radius: var(--radius);
   margin-bottom: 1.5rem;
   border-left: 4px solid var(--error);
   display: flex;
@@ -241,32 +490,95 @@
 .loading {
   text-align: center;
   padding: 2rem;
-  color: var(--text-dark);
+  color: var(--text-muted);
   font-size: 1.2rem;
 }
 
-.calculation-result {
-  background-color: var(--background-medium);
-  padding: 1rem;
-  border-radius: 0.375rem;
-  margin: 1rem 0;
-  border: 1px solid var(--border);
-}
-
-.calculation-result h4 {
-  color: var(--primary);
-  margin-bottom: 0.75rem;
+.no-results {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
   font-size: 1.1rem;
-}
-
-.calculation-result div {
-  margin-bottom: 0.5rem;
+  background-color: var(--bg-card);
+  border-radius: var(--radius);
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.calculation-result strong {
-  color: var(--text-medium);
+/* ========== Action Icons ========== */
+.action-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.borrower-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ========== Date Picker Overrides ========== */
+.react-datepicker {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-medium);
+  border: 1px solid var(--input-border);
+  color: var(--text-light);
+}
+
+.react-datepicker__header {
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--input-border);
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  color: var(--text-light);
+}
+
+.react-datepicker__day {
+  color: var(--text-light);
+}
+
+.react-datepicker__day:hover {
+  background-color: var(--bg-light);
+}
+
+.react-datepicker__day--selected {
+  background-color: var(--accent);
+  color: white;
+}
+
+.react-datepicker__day--keyboard-selected {
+  background-color: var(--bg-medium);
+  color: var(--text-light);
+}
+
+.react-datepicker__day--keyboard-selected:hover {
+  background-color: var(--accent);
+  color: white;
+}
+
+.react-datepicker__time-container {
+  border-left: 1px solid var(--input-border);
+}
+
+.react-datepicker__time-box {
+  background-color: var(--bg-medium);
+}
+
+.react-datepicker__time-list-item {
+  color: var(--text-light);
+}
+
+.react-datepicker__time-list-item:hover {
+  background-color: var(--bg-light);
+}
+
+.react-datepicker__time-list-item--selected {
+  background-color: var(--accent);
+  color: white;
 }
 
 /* ========== Responsive Design ========== */
@@ -275,16 +587,49 @@
     padding: 1rem;
   }
   
-  .repayment-table {
-    display: block;
-    overflow-x: auto;
+  .repayments-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
   
-  .form-actions {
+  .action-buttons {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .filter-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .filter-row .filter-group {
+    min-width: 100%;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn {
+    width: 100%;
+  }
+  
+  .form-buttons {
     flex-direction: column;
   }
   
-  .btn {
-    width: 100%;
+  .pagination {
+    flex-wrap: wrap;
+  }
+  
+  .repayment-form {
+    padding: 1.5rem 1rem;
   }
 }

@@ -58,6 +58,16 @@ const borrowerSchema = new mongoose.Schema({
     type: String,
     unique: true,
     default: uuidv4 // Automatically generate a unique borrowerId
+  },
+  // ... existing fields ...
+  creditScore: {
+    type: Number,
+    default: 650,
+    min: 300,
+    max: 850
+  },
+  lastCreditCheck: {
+    type: Date
   }
 
 }, {
@@ -86,6 +96,8 @@ borrowerSchema.post('save', async function(doc, next) {
   } catch (error) {
     next(error);
   }
+
+
 });
 
 const Borrower = mongoose.model('Borrower', borrowerSchema);

@@ -1,171 +1,605 @@
-/* Users.css */
+/* ========== Base Styles ========== */
+:root {
+  --primary-color: #10b981;
+  --secondary-color: #3b82f6;
+  --dark-bg: #1e293b;
+  --darker-bg: #1f2937;
+  --table-row-bg: #2d3748;
+  --text-light: #f3f4f6;
+  --text-muted: #94a3b8;
+  --error-color: #ef4444;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --border-radius: 8px;
+}
 
-/* ========== Layout & Base ========== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: var(--text-light);
+  background-color: var(--dark-bg);
+}
+
+/* ========== Layout & Containers ========== */
 .users-container {
-  display: flex;
-  flex-direction: column;
-  background-color: #1e293b; /* Background color from Home.css */
+
   padding: 2rem;
-  min-height: 100vh;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-h2 {
-  font-size: 2rem;
-  color: #10b981; /* Color matching the sidebar highlight in Home.css */
-  font-weight: bold;
-  margin-bottom: 1.5rem;
-}
-
-/* ========== Add User Section ========== */
-.add-user-toggle {
-  display: flex;
-  align-items: center;
-  color: #10b981; /* Highlight color */
-  cursor: pointer;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-
-.add-user-toggle span {
-  margin-left: 8px;
-}
-
-.user-form {
-  background-color: #1f2937; /* Dark background from Home.css */
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
-}
-
-.user-form input,
-.user-form select {
-  width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border: 1px solid #10b981; /* Matching border color */
-  border-radius: 5px;
-  font-size: 16px;
-  background-color: #2d3748; /* Dark background for form fields */
-  color: #f3f4f6;
-}
-
-.user-form input[type="checkbox"] {
-  margin-right: 10px;
-}
-
-.user-form label {
-  display: flex;
-  align-items: center;
-  color: #e5e7eb; /* Light text color */
-}
-
-.user-form .form-buttons {
+.users-header {
+  color: #0ea674;
   display: flex;
   justify-content: space-between;
-  margin-top: 20px;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-.user-form button {
-  background-color: #10b981; /* Primary color from Home.css */
-  color: #fff;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s ease;
+.header-actions {
+  display: flex;
+  gap: 1rem;
 }
 
-.user-form button:hover {
-  background-color: #3b82f6; /* Hover effect with secondary color */
+/* ========== Stats Cards ========== */
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
-.user-form button[type="button"] {
-  background-color: #d1d5db;
-  color: #1f2937; /* Lighter background for cancel button */
+.stat-card {
+  background-color: var(--darker-bg);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
 }
 
-.user-form button[type="button"]:hover {
-  background-color: #9ca3af;
+.stat-card:hover {
+  transform: translateY(-3px);
 }
 
-/* ========== Users Table ========== */
-.users-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 2rem;
-  background-color: #1e293b; /* Table background matching main container */
-}
-
-.users-table th,
-.users-table td {
-  padding: 1rem;
-  text-align: left;
+.stat-card h3 {
   font-size: 1rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
 }
 
-.users-table th {
-  background-color: #10b981; /* Header background color */
-  color: #fff;
+.stat-card p {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--primary-color);
 }
 
-.users-table td {
-  background-color: #2d3748; /* Dark background for rows */
-  border-bottom: 1px solid #1f2937; /* Matching row borders */
-  color: #f3f4f6;
+/* ========== Filters ========== */
+.filters-container {
+  background-color: var(--darker-bg);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.users-table tr:hover {
-  background-color: #3b82f6; /* Hover effect with secondary color */
+.search-box {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 1rem;
 }
 
-.users-table td button {
-  background-color: #3b82f6; /* Button color matching hover effect */
-  color: #fff;
-  border: 1px solid #3b82f6;
-  border-radius: 5px;
-  padding: 5px 10px;
-  margin: 0 5px;
+.search-box input {
+  width: 100%;
+  padding: 0.75rem 2.5rem;
+  border: 1px solid var(--primary-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  background-color: var(--table-row-bg);
+  color: var(--text-light);
+  transition: all 0.3s ease;
+}
+
+.search-box input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+}
+
+.search-icon, .clear-search {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.search-icon {
+  left: 1rem;
+}
+
+.clear-search {
+  right: 1rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.clear-search:hover {
+  color: var(--error-color);
+}
+
+.filter-controls {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-icon {
+  color: var(--primary-color);
+}
+
+select {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--primary-color);
+  border-radius: var(--border-radius);
+  background-color: var(--table-row-bg);
+  color: var(--text-light);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.users-table td button:hover {
-  background-color: #10b981; /* Button hover effect */
-  color: #fff;
-  border-color: #10b981;
+select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
 }
 
-/* ========== Loading Spinner ========== */
-.loading {
-  text-align: center;
+.reset-filters {
+  background-color: transparent;
+  color: var(--text-light);
+  border: 1px solid var(--text-muted);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.reset-filters:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* ========== Forms ========== */
+.user-form {
+  background-color: var(--darker-bg);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.form-header h3 {
+  margin: 0;
+}
+
+.close-form {
+  background: none;
+  border: none;
+  color: var(--text-muted);
   font-size: 1.2rem;
-  color: #94a3b8;
-  margin-top: 20px;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
-/* ========== Empty Table ========== */
-.users-table td[colspan="5"] {
+.close-form:hover {
+  color: var(--error-color);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-group input:not([type="checkbox"]),
+.form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--primary-color);
+  border-radius: var(--border-radius);
+  background-color: var(--table-row-bg);
+  color: var(--text-light);
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: auto;
+  margin-right: 0.5rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.submit-btn {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+  background-color: #0ea674;
+  transform: translateY(-1px);
+}
+
+.cancel-btn {
+  background-color: var(--table-row-bg);
+  color: var(--text-light);
+  padding: 0.75rem 1.5rem;
+  border: 1px solid var(--text-muted);
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+  border-color: var(--error-color);
+  color: var(--error-color);
+}
+
+/* ========== Table ========== */
+.table-responsive {
+  overflow-x: auto;
+  margin-bottom: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--darker-bg);
+}
+
+th, td {
+  padding: 1rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+th:hover {
+  background-color: #0ea674;
+}
+
+.sortable-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+td {
+  background-color: var(--table-row-bg);
+  border-bottom: 1px solid var(--dark-bg);
+}
+
+tr:hover td {
+  background-color: #374151;
+}
+
+/* ========== Status Button ========== */
+.status-btn {
+  color: var(--text-light);
+  font-size: 0.9rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  background-color: rgba(16, 185, 129, 0.2);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.status-btn.inactive {
+  background-color: rgba(239, 68, 68, 0.2);
+}
+
+.status-btn:hover {
+  transform: scale(1.05);
+}
+
+/* ========== Action Buttons ========== */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  font-size: 1rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.edit-btn {
+  color: var(--secondary-color);
+}
+
+.edit-btn:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  transform: scale(1.1);
+}
+
+.delete-btn {
+  color: var(--error-color);
+}
+
+.delete-btn:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  transform: scale(1.1);
+}
+
+/* ========== Pagination ========== */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+}
+
+.pagination button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--primary-color);
+  border-radius: 4px;
+  background-color: transparent;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination button.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ========== Loading & Empty States ========== */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(16, 185, 129, 0.2);
+  border-radius: 50%;
+  border-top-color: var(--primary-color);
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+.empty-state {
   text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
   font-style: italic;
-  color: #6b7280;
-  padding: 20px 0;
 }
 
-/* ========== Responsive ========== */
+/* ========== Buttons ========== */
+.add-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-user-btn:hover {
+  background-color: #0ea674;
+  transform: translateY(-1px);
+}
+
+.refresh-btn {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  font-size: 1.2rem;
+  padding: 0.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--primary-color);
+}
+
+/* ========== Responsive Design ========== */
 @media (max-width: 768px) {
   .users-container {
     padding: 1rem;
   }
 
-  .user-form input,
-  .user-form select {
-    padding: 8px;
-    font-size: 14px;
+  .users-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .users-table th,
-  .users-table td {
-    padding: 0.75rem;
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
   }
+
+  .stats-container {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .filter-controls {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  select {
+    width: 100%;
+  }
+
+  th, td {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-container {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  th, td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+/* Add these styles to your CSS file */
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #6b7280;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.export-btn:hover {
+  background-color: #4b5563;
+  transform: translateY(-1px);
+}
+
+.export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.export-btn:disabled:hover {
+  background-color: #6b7280;
 }

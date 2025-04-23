@@ -40,7 +40,10 @@ Credit-Bureau-Management-System/
 │   └── README.md
 │
 ├── frontend/                                   # Frontend - React
-│   ├── public/                                 # Publicly accessible static files
+│   ├── public/
+                asssets/ 
+                    images/
+                    LesothoFlag.png                 # Publicly accessible static files
 │   │   └── index.html
 │   │
 │   ├── src/

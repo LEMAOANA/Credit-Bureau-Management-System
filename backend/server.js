@@ -3,13 +3,15 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
+const path = require('path');
 
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const borrowerRoutes = require('./routes/borrowerRoutes');
 const loanRoutes = require('./routes/loanRoutes');
 const repaymentRoutes = require('./routes/repaymentRoutes');
-const creditReportRoutes = require('./routes/creditReportRoutes'); // Import the new routes
+const creditReportRoutes = require('./routes/creditReportRoutes');
+
 
 // Configure mongoose to handle deprecation warnings
 mongoose.set('strictQuery', false);
@@ -24,6 +26,9 @@ app.use(cors({
 
 // Middleware
 app.use(express.json()); // For parsing application/json
+
+// Serve static files from the frontend build folder
+app.use(express.static(path.join(__dirname, 'frontend', 'public')));
 
 // Log environment variables (for debugging, remove in production)
 console.log('Environment Variables:', {

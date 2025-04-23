@@ -1,11 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const creditReportController = require('../controllers/CreditReportController');
+const { 
+  generateCreditReport, 
+  downloadCreditReport, 
+  downloadCreditReportCSV 
+} = require('../controllers/creditReportController');
 
-router.get('/', creditReportController.getAllCreditReports);
-router.get('/:borrowerId', creditReportController.getCreditReportByBorrowerId);
-router.post('/', creditReportController.createCreditReport);        // ✅ POST
-router.put('/:borrowerId', creditReportController.updateCreditReport);  // ✅ PUT
-router.delete('/:borrowerId', creditReportController.deleteCreditReport);
+// Route to generate a credit report in JSON format
+router.get('/:borrowerId', generateCreditReport);
+
+// Route to download the credit report in PDF format
+router.get('/:borrowerId/pdf', downloadCreditReport);
+
+// Route to download the credit report in CSV format
+router.get('/:borrowerId/csv', downloadCreditReportCSV);
 
 module.exports = router;

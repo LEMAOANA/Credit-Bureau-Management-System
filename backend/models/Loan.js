@@ -52,6 +52,16 @@ const loanSchema = new mongoose.Schema({
     },
     get: (v) => Math.round(v * 100) / 100,
   },
+  // ... existing fields ...
+  repaymentSchedule: [{
+    dueDate: Date,
+    amountDue: Number,
+    status: {
+      type: String,
+      enum: ['Pending', 'Paid', 'Late', 'Missed'],
+      default: 'Pending'
+    }
+  }]
 }, {
   timestamps: true,
   toJSON: { getters: true },

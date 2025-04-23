@@ -9,7 +9,7 @@ import Dashboard from './components/Dashboard';
 import Landers from './components/Landers';
 import Borrowers from './components/Borrowers';
 import Loans from './components/Loans';
-import Website from './components/Website';
+import BorrowerSite from './components/BorrowerSite';
 import Repayments from './components/Repayments';
 import CreditReports from './components/CreditReports';
 import './App.css';
@@ -20,7 +20,7 @@ const App = () => {
       <Router>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Website />} />
+          <Route path="/" element={<BorrowerSite />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 

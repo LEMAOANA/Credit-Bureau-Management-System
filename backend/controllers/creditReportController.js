@@ -1,174 +1,154 @@
-const CreditReport = require('../models/CreditReport');  // Assuming your CreditReport model path is correct
-const Borrower = require('../models/Borrower');  // Assuming Borrower model path
-const Loan = require('../models/Loan');  // Assuming Loan model path
-const Repayment = require('../models/Repayment');  // Assuming Repayment model path
+const fs = require('fs');
+const Borrower = require('../models/Borrower');
+const Loan = require('../models/Loan');
+const Repayment = require('../models/Repayment');
+const { generateCreditReportPDF } = require('../utils/pdfGenerator');
+const { generateCreditReportCSV } = require('../utils/csvGenerator');  // Import the CSV generator
 
-// GET all credit reports
-exports.getAllCreditReports = async (req, res) => {
+// Generate Credit Report (JSON Format)
+exports.generateCreditReport = async (req, res) => {
   try {
-    const creditReports = await CreditReport.find()
-      .populate('borrower', 'name email')  // Populate only essential borrower details
-      .populate('loanId', 'loanAmount loanPurpose')  // Populate only essential loan details
-      .populate('repaymentHistory');  // Populate repayment history
+    const { borrowerId } = req.params;
+    const report = await generateReportData(borrowerId);
 
     res.status(200).json({
       success: true,
-      count: creditReports.length,
-      data: creditReports,
+      data: report
     });
-  } catch (err) {
-    console.error(err);
+
+  } catch (error) {
+    console.error('Error generating credit report:', error);
     res.status(500).json({
       success: false,
-      error: 'Something went wrong while fetching credit reports',
-      details: err.message,
+      message: 'Failed to generate credit report',
+      error: error.message
     });
   }
 };
 
-// GET credit report for a specific borrower by borrowerId
-exports.getCreditReportByBorrowerId = async (req, res) => {
+// Generate Credit Report (CSV Format)
+exports.downloadCreditReportCSV = async (req, res) => {
   try {
-    const borrowerId = req.params.borrowerId;
+    const { borrowerId } = req.params;
 
-    // Validate borrowerId
-    if (!borrowerId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Borrower ID is required',
-      });
-    }
+    // Generate report data
+    const report = await generateReportData(borrowerId);
 
-    const creditReport = await CreditReport.findOne({ borrower: borrowerId })
-      .populate('borrower', 'name email')  // Populate only essential borrower details
-      .populate('loanId', 'loanAmount loanPurpose')  // Populate only essential loan details
-      .populate('repaymentHistory');
+    // Generate CSV file path
+    const filePath = `./reports/credit-report-${borrowerId}-${Date.now()}.csv`;
 
-    if (!creditReport) {
-      return res.status(404).json({
-        success: false,
-        error: 'Credit report not found for this borrower',
-      });
-    }
+    // Generate the CSV file using the csv generator utility
+    await generateCreditReportCSV(report, filePath);
 
-    res.status(200).json({
-      success: true,
-      data: creditReport,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      error: 'Something went wrong while fetching the credit report',
-      details: err.message,
-    });
-  }
-};
-
-// DELETE credit report by borrowerId
-exports.deleteCreditReport = async (req, res) => {
-  try {
-    const borrowerId = req.params.borrowerId;
-
-    // Validate borrowerId
-    if (!borrowerId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Borrower ID is required',
-      });
-    }
-
-    const creditReport = await CreditReport.findOneAndDelete({ borrower: borrowerId });
-
-    if (!creditReport) {
-      return res.status(404).json({
-        success: false,
-        error: 'Credit report not found for this borrower',
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Credit report successfully deleted',
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      error: 'Something went wrong while deleting the credit report',
-      details: err.message,
-    });
-  }
-};
-
-// POST: Create a new credit report
-exports.createCreditReport = async (req, res) => {
-    try {
-      const { borrower, loanId, creditScore, reportDate, repaymentHistory, remarks } = req.body;
-  
-      if (!borrower || !loanId || !creditScore || !reportDate) {
-        return res.status(400).json({
-          success: false,
-          error: 'Required fields: borrower, loanId, creditScore, reportDate',
-        });
+    // Send and delete file
+    res.download(filePath, () => {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath); // Cleanup after download
+        console.log('File successfully deleted:', filePath);
+      } else {
+        console.warn('File not found for deletion:', filePath);
       }
-  
-      const newReport = await CreditReport.create({
-        borrower,
-        loanId,
-        creditScore,
-        reportDate,
-        repaymentHistory,
-        remarks,
-      });
-  
-      res.status(201).json({
-        success: true,
-        data: newReport,
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to create credit report',
-        details: err.message,
-      });
-    }
-  };
+    });
 
-  // PUT: Update an existing credit report by borrowerId
-exports.updateCreditReport = async (req, res) => {
-    try {
-      const borrowerId = req.params.borrowerId;
-  
-      const updatedData = req.body;
-  
-      const updatedReport = await CreditReport.findOneAndUpdate(
-        { borrower: borrowerId },
-        updatedData,
-        { new: true, runValidators: true }
-      ).populate('borrower', 'name email')
-       .populate('loanId', 'loanAmount loanPurpose')
-       .populate('repaymentHistory');
-  
-      if (!updatedReport) {
-        return res.status(404).json({
-          success: false,
-          error: 'Credit report not found for this borrower',
-        });
+  } catch (error) {
+    console.error('Error generating CSV report:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate CSV report',
+      error: error.message
+    });
+  }
+};
+
+// Generate PDF Credit Report
+exports.downloadCreditReport = async (req, res) => {
+  try {
+    const { borrowerId } = req.params;
+
+    // Generate report data
+    const report = await generateReportData(borrowerId);
+
+    // Generate PDF file path
+    const filePath = `./reports/credit-report-${borrowerId}-${Date.now()}.pdf`;
+    await generateCreditReportPDF(report, filePath);
+
+    // Send and delete file
+    res.download(filePath, () => {
+      // Check if the file exists before trying to delete it
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath); // cleanup
+        console.log('File successfully deleted:', filePath);
+      } else {
+        console.warn('File not found for deletion:', filePath);
       }
-  
-      res.status(200).json({
-        success: true,
-        data: updatedReport,
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to update credit report',
-        details: err.message,
-      });
-    }
+    });
+
+  } catch (error) {
+    console.error('Error generating PDF report:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate PDF report'
+    });
+  }
+};
+
+// Shared logic for both JSON, CSV, and PDF generation
+async function generateReportData(borrowerId) {
+  const borrower = await Borrower.findById(borrowerId);
+  if (!borrower) {
+    throw new Error('Borrower not found');
+  }
+
+  const loans = await Loan.find({ borrower: borrowerId });
+  const repayments = await Repayment.find({ borrower: borrowerId });
+
+  const totalBorrowed = loans.reduce((sum, loan) => sum + loan.amount, 0);
+  const totalInterest = loans.reduce((sum, loan) => sum + (loan.amount * (loan.interestRate / 100)), 0);
+  const totalRepaid = repayments.reduce((sum, repayment) => sum + repayment.paymentAmount, 0);
+  const totalOutstanding = totalBorrowed + totalInterest - totalRepaid;
+  const creditScore = calculateCreditScore(loans, repayments);
+
+  return {
+    borrowerInfo: {
+      name: borrower.name,
+      email: borrower.email,
+      phone: borrower.phone,
+      borrowerId: borrower.borrowerId
+    },
+    summary: {
+      totalLoans: loans.length,
+      totalBorrowed,
+      totalRepaid,
+      totalOutstanding,
+      creditScore
+    },
+    loanDetails: loans.map(loan => ({
+      loanId: loan._id,
+      amount: loan.amount,
+      interestRate: loan.interestRate,
+      purpose: loan.purpose,
+      status: loan.status,
+      repaymentStatus: loan.repaymentStatus,
+      totalRepaymentAmount: loan.totalRepaymentAmount
+    })),
+    repaymentHistory: repayments.map(repayment => ({
+      date: repayment.paymentDate,
+      amount: repayment.paymentAmount,
+      method: repayment.paymentType
+    }))
   };
-  
+}
+
+// Credit Score Calculation
+function calculateCreditScore(loans, repayments) {
+  let score = 650;
+  const onTimePayments = repayments.filter(r => true).length; // Simplified logic
+  const latePayments = repayments.length - onTimePayments;
+  const activeLoans = loans.filter(l => l.status === 'Approved' && l.repaymentStatus !== 'Completed').length;
+
+  score += onTimePayments * 5;
+  score -= latePayments * 10;
+  score -= activeLoans * 3;
+
+  return Math.min(Math.max(score, 300), 850);
+}
