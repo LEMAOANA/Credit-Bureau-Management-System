@@ -1,24 +1,13 @@
 :root {
-  /* Light Mode Colors */
-  --primary-color: #1976d2;
-  --secondary-color: #f5f5f5;
-  --text-color: #333;
-  --border-color: #ddd;
-  --error-color: #d32f2f;
-  --success-color: #2e7d32;
-  --warning-color: #fbc02d;
-  --info-color: #0288d1;
-  
-  /* Dark Mode Colors */
-  --dark-bg: #1e293b;
-  --dark-card-bg: #1f2937;
-  --dark-widget-bg: #374151;
-  --dark-text: #f3f4f6;
-  --dark-muted-text: #9ca3af;
-  --dark-highlight-green: #10b981;
-  --dark-alert-red: #ef4444;
-  --dark-hover: #4b5563;
-  --dark-border: #4b5563;
+  /* Main Colors */
+  --bg: #1e293b;
+  --card-bg: #1f2937;
+  --widget-bg: #374151;
+  --text-primary: #f3f4f6;
+  --text-muted: #9ca3af;
+  --highlight-green: #10b981;
+  --alert-red: #ef4444;
+  --hover: #4b5563;
   
   /* Alert Levels */
   --alert-high-bg: #7f1d1d;
@@ -40,15 +29,9 @@
   max-width: 1400px;
   margin: 0 auto;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: var(--text-color);
-  background-color: white;
+  color: var(--text-primary);
+  background-color: var(--bg);
   min-height: 100vh;
-  transition: all 0.3s ease;
-}
-
-.credit-reports-container.dark-mode {
-  background-color: var(--dark-bg);
-  color: var(--dark-text);
 }
 
 .header-section {
@@ -57,24 +40,15 @@
   align-items: center;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--hover);
 }
 
-.dark-mode .header-section {
-  border-bottom-color: var(--dark-border);
-}
-
-.header-controls {
-  display: flex;
-  gap: 1rem;
-}
-
-.mode-toggle, .help-btn {
+.help-btn {
   background: none;
   border: none;
   cursor: pointer;
   font-size: 1.2rem;
-  color: var(--primary-color);
+  color: var(--highlight-green);
   padding: 0.5rem;
   border-radius: 50%;
   display: flex;
@@ -82,32 +56,17 @@
   justify-content: center;
 }
 
-.dark-mode .mode-toggle,
-.dark-mode .help-btn {
-  color: var(--dark-highlight-green);
-}
-
-.mode-toggle:hover, .help-btn:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.dark-mode .mode-toggle:hover, 
-.dark-mode .help-btn:hover {
-  background-color: var(--dark-hover);
+.help-btn:hover {
+  background-color: var(--hover);
 }
 
 .help-section {
-  background-color: var(--secondary-color);
+  background-color: var(--card-bg);
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
-  border-left: 4px solid var(--primary-color);
-}
-
-.dark-mode .help-section {
-  background-color: var(--dark-card-bg);
-  border-left-color: var(--dark-highlight-green);
-  color: var(--dark-text);
+  border-left: 4px solid var(--highlight-green);
+  color: var(--text-primary);
 }
 
 .controls {
@@ -126,26 +85,22 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .borrower-select select {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--hover);
   border-radius: 6px;
   font-size: 1rem;
-  background-color: white;
-}
-
-.dark-mode .borrower-select select {
-  background-color: var(--dark-widget-bg);
-  color: var(--dark-text);
-  border-color: var(--dark-border);
+  background-color: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .fetch-btn {
   padding: 0.75rem 1.5rem;
-  background-color: var(--primary-color);
+  background-color: var(--highlight-green);
   color: white;
   border: none;
   border-radius: 6px;
@@ -157,11 +112,11 @@
 }
 
 .fetch-btn:hover {
-  background-color: #1565c0;
+  background-color: #0d9c6e;
 }
 
 .fetch-btn:disabled {
-  background-color: #b0bec5;
+  background-color: var(--widget-bg);
   cursor: not-allowed;
 }
 
@@ -177,15 +132,10 @@
   min-width: 250px;
   display: flex;
   align-items: center;
-  background-color: white;
-  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  border: 1px solid var(--hover);
   border-radius: 6px;
   padding: 0 0.75rem;
-}
-
-.dark-mode .search-bar {
-  background-color: var(--dark-widget-bg);
-  border-color: var(--dark-border);
 }
 
 .search-bar input {
@@ -195,15 +145,11 @@
   outline: none;
   font-size: 1rem;
   background: transparent;
-  color: inherit;
+  color: var(--text-primary);
 }
 
 .search-bar svg {
-  color: #666;
-}
-
-.dark-mode .search-bar svg {
-  color: var(--dark-muted-text);
+  color: var(--text-muted);
 }
 
 .status-filter {
@@ -214,19 +160,15 @@
 
 .status-filter label {
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .status-filter select {
   padding: 0.75rem;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--hover);
   border-radius: 6px;
-  background-color: white;
-}
-
-.dark-mode .status-filter select {
-  background-color: var(--dark-widget-bg);
-  color: var(--dark-text);
-  border-color: var(--dark-border);
+  background-color: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .loading-skeleton {
@@ -237,36 +179,24 @@
 
 .skeleton-header {
   height: 3rem;
-  background-color: #eee;
+  background-color: var(--widget-bg);
   border-radius: 6px;
   animation: pulse 1.5s infinite;
 }
 
-.dark-mode .skeleton-header {
-  background-color: var(--dark-widget-bg);
-}
-
 .skeleton-chart {
   height: 300px;
-  background-color: #eee;
+  background-color: var(--widget-bg);
   border-radius: 6px;
   animation: pulse 1.5s infinite;
   animation-delay: 0.2s;
 }
 
-.dark-mode .skeleton-chart {
-  background-color: var(--dark-widget-bg);
-}
-
 .skeleton-row {
   height: 3rem;
-  background-color: #eee;
+  background-color: var(--widget-bg);
   border-radius: 6px;
   animation: pulse 1.5s infinite;
-}
-
-.dark-mode .skeleton-row {
-  background-color: var(--dark-widget-bg);
 }
 
 @keyframes pulse {
@@ -280,31 +210,19 @@
 
 .error-message {
   padding: 1rem;
-  background-color: #ffebee;
-  color: var(--error-color);
-  border-radius: 6px;
-  margin-bottom: 1.5rem;
-  border-left: 4px solid var(--error-color);
-}
-
-.dark-mode .error-message {
   background-color: var(--alert-high-bg);
   color: var(--alert-high-text);
-  border-left-color: var(--alert-high-border);
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid var(--alert-high-border);
 }
 
 .report-details {
-  background-color: white;
-  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  border: 1px solid var(--hover);
   border-radius: 8px;
   padding: 2rem;
   margin-top: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.dark-mode .report-details {
-  background-color: var(--dark-card-bg);
-  border-color: var(--dark-border);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -315,15 +233,12 @@
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
   gap: 1rem;
+  
 }
 
 .borrower-email {
-  color: #666;
+  color: var(--text-muted);
   margin-top: 0.25rem;
-}
-
-.dark-mode .borrower-email {
-  color: var(--dark-muted-text);
 }
 
 .credit-score-display {
@@ -336,18 +251,15 @@
 
 .chart-container {
   margin: 2rem 0;
-  background-color: var(--secondary-color);
+  background-color: var(--widget-bg);
   padding: 1.5rem;
   border-radius: 8px;
-}
-
-.dark-mode .chart-container {
-  background-color: var(--dark-widget-bg);
 }
 
 .chart-container h4 {
   margin-top: 0;
   margin-bottom: 1.5rem;
+  color: var(--text-primary);
 }
 
 .summary-cards {
@@ -358,36 +270,24 @@
 }
 
 .summary-card {
-  background-color: var(--secondary-color);
+  background-color: var(--widget-bg);
   padding: 1.5rem;
   border-radius: 8px;
   text-align: center;
 }
 
-.dark-mode .summary-card {
-  background-color: var(--dark-widget-bg);
-}
-
 .summary-card h5 {
   margin-top: 0;
   margin-bottom: 0.5rem;
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.9rem;
-}
-
-.dark-mode .summary-card h5 {
-  color: var(--dark-muted-text);
 }
 
 .summary-card p {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--primary-color);
-}
-
-.dark-mode .summary-card p {
-  color: var(--dark-highlight-green);
+  color: var(--highlight-green);
 }
 
 .table-container {
@@ -401,43 +301,29 @@ table {
 }
 
 th {
-  background-color: var(--secondary-color);
+  background-color: var(--widget-bg);
   padding: 1rem;
   text-align: left;
   font-weight: 600;
   position: sticky;
   top: 0;
-}
-
-.dark-mode th {
-  background-color: var(--dark-widget-bg);
+  color: var(--text-primary);
 }
 
 td {
   padding: 1rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.dark-mode td {
-  border-bottom-color: var(--dark-border);
+  border-bottom: 1px solid var(--hover);
+  color: var(--text-primary);
 }
 
 tr:hover {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-.dark-mode tr:hover {
-  background-color: var(--dark-hover);
+  background-color: var(--hover);
 }
 
 .no-results {
   text-align: center;
   padding: 2rem;
-  color: #666;
-}
-
-.dark-mode .no-results {
-  color: var(--dark-muted-text);
+  color: var(--text-muted);
 }
 
 .status-badge {
@@ -450,42 +336,38 @@ tr:hover {
 }
 
 .status-badge.active {
-  background-color: rgba(46, 125, 50, 0.1);
-  color: var(--success-color);
-}
-
-.status-badge.completed {
-  background-color: rgba(2, 136, 209, 0.1);
-  color: var(--info-color);
-}
-
-.status-badge.defaulted {
-  background-color: rgba(211, 47, 47, 0.1);
-  color: var(--error-color);
-}
-
-.status-badge.pending {
-  background-color: rgba(251, 192, 45, 0.1);
-  color: var(--warning-color);
-}
-
-.dark-mode .status-badge.active {
   background-color: var(--alert-low-bg);
   color: var(--alert-low-text);
 }
 
-.dark-mode .status-badge.completed {
+.status-badge.completed {
   background-color: rgba(2, 136, 209, 0.3);
+  color: var(--text-primary);
 }
 
-.dark-mode .status-badge.defaulted {
+.status-badge.defaulted {
   background-color: var(--alert-high-bg);
   color: var(--alert-high-text);
 }
 
-.dark-mode .status-badge.pending {
+.status-badge.pending {
   background-color: var(--alert-medium-bg);
   color: var(--alert-medium-text);
+}
+
+/* Enhanced table styling for financial data */
+.amount-cell {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  text-align: right;
+}
+
+.remaining-red {
+  color: var(--alert-red);
+}
+
+.remaining-green {
+  color: var(--highlight-green);
 }
 
 .action-buttons {
@@ -508,43 +390,36 @@ tr:hover {
 }
 
 .export-btn.pdf {
-  background-color: var(--error-color);
+  background-color: var(--alert-red);
   color: white;
 }
 
 .export-btn.pdf:hover {
-  background-color: #b71c1c;
+  background-color: #dc2626;
 }
 
 .export-btn.csv {
-  background-color: var(--success-color);
+  background-color: var(--highlight-green);
   color: white;
 }
 
 .export-btn.csv:hover {
-  background-color: #1b5e20;
+  background-color: #0d9c6e;
 }
 
 .export-btn.chart {
-  background-color: var(--info-color);
+  background-color: #3b82f6;
   color: white;
 }
 
 .export-btn.chart:hover {
-  background-color: #01579b;
+  background-color: #2563eb;
 }
 
 .export-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.dark-mode .export-btn.pdf {
-  background-color: var(--dark-alert-red);
-}
-
-.dark-mode .export-btn.csv {
-  background-color: var(--dark-highlight-green);
+  background-color: var(--widget-bg);
 }
 
 /* Responsive styles */

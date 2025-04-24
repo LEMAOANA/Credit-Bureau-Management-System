@@ -10,6 +10,21 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format, parseISO } from 'date-fns';
 
+// Date parsing utility function
+const parseDate = (dateString) => {
+  if (!dateString) return new Date();
+  if (dateString instanceof Date) return dateString;
+  try {
+    // Try ISO format first
+    if (dateString.includes('T')) return new Date(dateString);
+    // Try other common formats
+    return new Date(dateString.replace(/-/g, '/'));
+  } catch (e) {
+    console.warn('Failed to parse date, using current date instead', e);
+    return new Date();
+  }
+};
+
 const Borrowers = () => {
   // State declarations
   const [borrowers, setBorrowers] = useState([]);
@@ -159,7 +174,7 @@ const Borrowers = () => {
   const addBorrower = async () => {
     const response = await axios.post('http://localhost:5001/api/borrowers', {
       ...newBorrower,
-      repaymentStartDate: format(newBorrower.repaymentStartDate, 'yyyy-MM-dd')
+      repaymentStartDate: newBorrower.repaymentStartDate.toISOString()
     });
     if (response.data.success) {
       setBorrowers([response.data.data, ...borrowers]);
@@ -173,7 +188,7 @@ const Borrowers = () => {
       `http://localhost:5001/api/borrowers/${editingBorrower._id}`,
       {
         ...editingBorrower,
-        repaymentStartDate: format(editingBorrower.repaymentStartDate, 'yyyy-MM-dd')
+        repaymentStartDate: editingBorrower.repaymentStartDate.toISOString()
       }
     );
     if (response.data.success) {
@@ -411,7 +426,6 @@ const Borrowers = () => {
           <button className="add-borrower-toggle" onClick={() => setShowForm(!showForm)}>
             <FaPlus /> <span>{showForm ? 'Cancel' : 'Add Borrower'}</span>
           </button>
-
           <button className="export-button" onClick={exportToCSV}>
             Export to CSV
           </button>
@@ -570,9 +584,7 @@ const Borrowers = () => {
                 <FaCalendarAlt className="input-icon" />
                 <DatePicker
                   selected={editingBorrower ? 
-                    (editingBorrower.repaymentStartDate instanceof Date ? 
-                      editingBorrower.repaymentStartDate : 
-                      new Date(editingBorrower.repaymentStartDate)) : 
+                    parseDate(editingBorrower.repaymentStartDate) : 
                     newBorrower.repaymentStartDate}
                   onChange={(date) => handleDateChange(date, 'repaymentStartDate', editingBorrower ? setEditingBorrower : setNewBorrower)}
                   dateFormat="MM/dd/yyyy"
@@ -652,90 +664,89 @@ const Borrowers = () => {
           </div>
           
           <table className="borrowers-table">
-  <thead>
-    <tr>
-      <th onClick={() => requestSort('name')}>
-        <div className="th-content">
-          Name {getSortIcon('name')}
-        </div>
-      </th>
-      <th>Contact</th>
-      <th onClick={() => requestSort('loanAmount')}>
-        <div className="th-content">
-          Loan (M) {getSortIcon('loanAmount')}
-        </div>
-      </th>
-      <th>Purpose</th>
-      <th onClick={() => requestSort('createdAt')}>
-        <div className="th-content">
-          Created {getSortIcon('createdAt')}
-        </div>
-      </th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {currentBorrowers.map((borrower) => (
-      <tr key={borrower._id}>
-        <td>
-          <div className="borrower-name">
-            <FaUserAlt className="user-icon" />
-            <span>{borrower.name}</span>
-          </div>
-        </td>
-        <td>
-          <div className="contact-info">
-            {borrower.email?.includes('@gmail.com') ? borrower.email : '-'}
-          </div>
-        </td>
-        <td className="loan-amount">
-          M{parseFloat(borrower.loanAmount).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          })}
-        </td>
-        <td className="loan-purpose">
-          {borrower.loanPurpose || '-'}
-        </td>
-        <td>
-          {format(parseISO(borrower.createdAt), 'MMM dd, yyyy')}
-        </td>
-        <td>
-          <div className="action-buttons">
-            <button 
-              onClick={() => { 
-                setEditingBorrower({
-                  ...borrower,
-                  repaymentStartDate: new Date(borrower.repaymentStartDate)
-                }); 
-                setShowForm(true); 
-              }}
-              className="btn-edit"
-              title="Edit"
-            >
-              <FaEdit />
-            </button>
-            <button 
-              onClick={() => deleteBorrower(borrower._id)}
-              className="btn-delete"
-              title="Delete"
-            >
-              <FaTrash />
-            </button>
-            <button 
-              onClick={() => viewLoans(borrower._id)}
-              className="btn-view"
-              title="View Loans"
-            >
-              <FaFileAlt />
-            </button>
-          </div>
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-
+            <thead>
+              <tr>
+                <th onClick={() => requestSort('name')}>
+                  <div className="th-content">
+                    Name {getSortIcon('name')}
+                  </div>
+                </th>
+                <th>Contact</th>
+                <th onClick={() => requestSort('loanAmount')}>
+                  <div className="th-content">
+                    Loan (M) {getSortIcon('loanAmount')}
+                  </div>
+                </th>
+                <th>Purpose</th>
+                <th onClick={() => requestSort('createdAt')}>
+                  <div className="th-content">
+                    Created {getSortIcon('createdAt')}
+                  </div>
+                </th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentBorrowers.map((borrower) => (
+                <tr key={borrower._id}>
+                  <td>
+                    <div className="borrower-name">
+                      <FaUserAlt className="user-icon" />
+                      <span>{borrower.name}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="contact-info">
+                      {borrower.email?.includes('@gmail.com') ? borrower.email : '-'}
+                    </div>
+                  </td>
+                  <td className="loan-amount">
+                    M{parseFloat(borrower.loanAmount).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2
+                    })}
+                  </td>
+                  <td className="loan-purpose">
+                    {borrower.loanPurpose || '-'}
+                  </td>
+                  <td>
+                    {format(parseISO(borrower.createdAt), 'MMM dd, yyyy')}
+                  </td>
+                  <td>
+                    <div className="action-buttons">
+                      <button 
+                        onClick={() => { 
+                          setEditingBorrower({
+                            ...borrower,
+                            repaymentStartDate: parseDate(borrower.repaymentStartDate)
+                          }); 
+                          setShowForm(true); 
+                        }}
+                        className="btn-edit"
+                        title="Edit"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button 
+                        onClick={() => deleteBorrower(borrower._id)}
+                        className="btn-delete"
+                        title="Delete"
+                      >
+                        <FaTrash />
+                      </button>
+                      <button 
+                        onClick={() => viewLoans(borrower._id)}
+                        className="btn-view"
+                        title="View Loans"
+                      >
+                        <FaFileAlt />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
           {/* Pagination */}
           {filteredBorrowers.length > usersPerPage && (

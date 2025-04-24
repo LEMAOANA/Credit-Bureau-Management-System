@@ -53,6 +53,15 @@ ChartJS.register(
   LineElement
 );
 
+// Currency formatter for Lesotho Maloti
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('en-LS', {
+    style: 'currency',
+    currency: 'LSL',
+    minimumFractionDigits: 2
+  }).format(amount);
+};
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -66,6 +75,8 @@ const AdminDashboard = () => {
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)));
   const [endDate, setEndDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [borrowerStatusFilter, setBorrowerStatusFilter] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
 
   // Data states
@@ -99,7 +110,7 @@ const AdminDashboard = () => {
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
-    role: 'admin',
+    role: 'user',
     password: ''
   });
   const [processingAction, setProcessingAction] = useState('approve');
@@ -164,49 +175,64 @@ const AdminDashboard = () => {
       new Date(repayment.createdAt || repayment.date) <= endDate
     );
 
+    // Calculate total loan amounts
+    const totalLoanAmount = loans.reduce((sum, loan) => sum + loan.amount, 0);
+    const filteredLoanAmount = filteredLoans.reduce((sum, loan) => sum + loan.amount, 0);
+    const activeLoanAmount = filteredLoans
+      .filter(l => l.status === 'Approved')
+      .reduce((sum, loan) => sum + loan.amount, 0);
+    const defaultedAmount = filteredLoans
+      .filter(l => l.status === 'Defaulted')
+      .reduce((sum, loan) => sum + loan.amount, 0);
+    const repaymentAmount = filteredRepayments.reduce((sum, r) => sum + r.amount, 0);
+
     // Calculate stats
     const calculatedStats = [
       { 
-        title: "Total Lenders", 
-        value: users.filter(u => u.role === 'lender').length, 
-        change: calculateChange(users.filter(u => u.role === 'lender').length, 30), 
+        title: "Total Users", 
+        value: users.length, 
+        change: calculateChange(users.length, 30), 
         trend: "up",
         icon: <Users size={24} />
       },
       { 
-        title: "Active Borrowers", 
-        value: borrowers.filter(b => b.status === 'active').length, 
-        change: calculateChange(borrowers.filter(b => b.status === 'active').length, 30), 
+        title: "Total Borrowers", 
+        value: borrowers.length, 
+        change: calculateChange(borrowers.length, 30), 
         trend: "up",
         icon: <UserCircle size={24} />
+      },
+      { 
+        title: "Total Loans", 
+        value: loans.length, 
+        change: calculateChange(loans.length, 30), 
+        trend: "up",
+        icon: <CreditCard size={24} />,
+        subValue: formatCurrency(totalLoanAmount)
       },
       { 
         title: "Active Loans", 
         value: filteredLoans.filter(l => l.status === 'Approved').length, 
         change: calculateChange(filteredLoans.filter(l => l.status === 'Approved').length, 30), 
         trend: filteredLoans.filter(l => l.status === 'Approved').length > 15 ? "up" : "down",
-        icon: <CreditCard size={24} />
+        icon: <CheckCircle size={24} />,
+        subValue: formatCurrency(activeLoanAmount)
       },
       { 
         title: "Total Repayments", 
         value: filteredRepayments.length, 
         change: calculateChange(filteredRepayments.length, 30), 
         trend: "up",
-        icon: <DollarSign size={24} />
-      },
-      { 
-        title: "Pending Loans", 
-        value: filteredLoans.filter(l => l.status === 'Pending').length, 
-        change: calculateChange(filteredLoans.filter(l => l.status === 'Pending').length, 30), 
-        trend: filteredLoans.filter(l => l.status === 'Pending').length > 5 ? "up" : "down",
-        icon: <AlertCircle size={24} />
+        icon: <DollarSign size={24} />,
+        subValue: formatCurrency(repaymentAmount)
       },
       { 
         title: "Default Rate", 
-        value: `${((filteredLoans.filter(l => l.status === 'Defaulted').length / filteredLoans.length) * 100 || 0)}%`, 
+        value: `${((filteredLoans.filter(l => l.status === 'Defaulted').length / filteredLoans.length) * 100 || 0).toFixed(1)}%`, 
         change: "0%", 
         trend: "neutral",
-        icon: <TrendingUp size={24} />
+        icon: <AlertCircle size={24} />,
+        subValue: formatCurrency(defaultedAmount)
       }
     ];
 
@@ -220,7 +246,7 @@ const AdminDashboard = () => {
           type: "repayment",
           action: "received",
           user: borrowers.find(b => b._id === (repayment.borrower?._id || repayment.borrower))?.name || 'Unknown',
-          amount: repayment.amount,
+          amount: formatCurrency(repayment.amount),
           time: new Date(repayment.createdAt || repayment.date).toLocaleTimeString(),
           date: new Date(repayment.createdAt || repayment.date).toLocaleDateString()
         })),
@@ -233,7 +259,7 @@ const AdminDashboard = () => {
           type: "loan",
           action: "approved",
           user: borrowers.find(b => b._id === (loan.borrower?._id || loan.borrower))?.name || 'Unknown',
-          amount: loan.amount,
+          amount: formatCurrency(loan.amount),
           time: new Date(loan.createdAt || loan.date).toLocaleTimeString(),
           date: new Date(loan.createdAt || loan.date).toLocaleDateString()
         }))
@@ -246,8 +272,8 @@ const AdminDashboard = () => {
       loan.status === "Approved" && 
       new Date(loan.dueDate || new Date(new Date(loan.createdAt || loan.date).setMonth(
         new Date(loan.createdAt || loan.date).getMonth() + (loan.term || 12)
-      ))) < new Date()
-    );
+      )) < new Date()
+    ));
     
     const borrowersWithManyLoans = borrowers
       .map(borrower => {
@@ -533,7 +559,7 @@ const AdminDashboard = () => {
         setNewUser({
           name: '',
           email: '',
-          role: 'admin',
+          role: 'user',
           password: ''
         });
         window.location.reload(); // Refresh data
@@ -568,16 +594,27 @@ const AdminDashboard = () => {
     setEndDate(new Date());
   };
 
+  const handleUserSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
   const handleBorrowerSearch = (e) => {
     setSearchTerm(e.target.value);
   };
 
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => 
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    ).filter(user => roleFilter ? user.role === roleFilter : true);
+  }, [users, searchTerm, roleFilter]);
+
   const filteredBorrowers = useMemo(() => {
     return borrowers.filter(borrower => 
-      borrower.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      borrower.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [borrowers, searchTerm]);
+      borrower.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      borrower.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    ).filter(borrower => borrowerStatusFilter ? borrower.status === borrowerStatusFilter : true);
+  }, [borrowers, searchTerm, borrowerStatusFilter]);
 
   // Chart options
   const pieChartOptions = {
@@ -617,7 +654,7 @@ const AdminDashboard = () => {
       tooltip: {
         callbacks: {
           label: function(context) {
-            return `$${context.raw.toLocaleString()}`;
+            return formatCurrency(context.raw);
           }
         }
       },
@@ -630,7 +667,7 @@ const AdminDashboard = () => {
         },
         ticks: {
           callback: function(value) {
-            return '$' + value.toLocaleString();
+            return formatCurrency(value);
           }
         }
       },
@@ -667,6 +704,22 @@ const AdminDashboard = () => {
       </div>
     );
   }
+
+  const StatCard = ({ title, value, change, trend, icon, subValue }) => (
+    <div className="stat-card">
+      <div className="stat-content">
+        <h3>{title}</h3>
+        <div className="stat-value">{value}</div>
+        {subValue && <div className="stat-subvalue">{subValue}</div>}
+        <div className={`stat-change ${trend}`}>
+          {change} <ArrowUpRight size={14} />
+        </div>
+      </div>
+      <div className="stat-icon">
+        {icon}
+      </div>
+    </div>
+  );
 
   return (
     <div className="dashboard">
@@ -714,13 +767,13 @@ const AdminDashboard = () => {
                     .filter(loan => loan.borrower?._id === newPayment.borrowerId || loan.borrower === newPayment.borrowerId)
                     .map(loan => (
                       <option key={loan._id} value={loan._id}>
-                        ${loan.amount} - {loan.purpose} (Due: {new Date(loan.dueDate).toLocaleDateString()})
+                        {formatCurrency(loan.amount)} - {loan.purpose} (Due: {new Date(loan.dueDate).toLocaleDateString()})
                       </option>
                     ))}
                 </select>
               </div>
               <div className="form-group">
-                <label>Amount</label>
+                <label>Amount (M)</label>
                 <input 
                   type="number" 
                   value={newPayment.amount}
@@ -795,7 +848,7 @@ const AdminDashboard = () => {
                     .filter(loan => loan.status === 'Pending')
                     .map(loan => (
                       <option key={loan._id} value={loan._id}>
-                        {borrowers.find(b => b._id === (loan.borrower?._id || loan.borrower))?.name || 'Unknown'} - ${loan.amount}
+                        {borrowers.find(b => b._id === (loan.borrower?._id || loan.borrower))?.name || 'Unknown'} - {formatCurrency(loan.amount)}
                       </option>
                     ))}
                 </select>
@@ -851,7 +904,7 @@ const AdminDashboard = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label>Amount</label>
+                <label>Amount (M)</label>
                 <input 
                   type="number" 
                   value={newLoan.amount}
@@ -956,8 +1009,8 @@ const AdminDashboard = () => {
                   value={newUser.role}
                   onChange={(e) => setNewUser({...newUser, role: e.target.value})}
                 >
+                  <option value="user">User</option>
                   <option value="admin">Admin</option>
-                  <option value="lender">Lender</option>
                   <option value="borrower">Borrower</option>
                 </select>
               </div>
@@ -1036,10 +1089,10 @@ const AdminDashboard = () => {
           Overview
         </button>
         <button 
-          className={`tab-button ${activeTab === 'lenders' ? 'active' : ''}`}
-          onClick={() => setActiveTab('lenders')}
+          className={`tab-button ${activeTab === 'users' ? 'active' : ''}`}
+          onClick={() => setActiveTab('users')}
         >
-          Lenders
+          Users
         </button>
         <button 
           className={`tab-button ${activeTab === 'borrowers' ? 'active' : ''}`}
@@ -1067,18 +1120,15 @@ const AdminDashboard = () => {
           {/* Stats Cards */}
           <div className="stats-grid">
             {stats.map((stat, index) => (
-              <div key={index} className="stat-card">
-                <div className="stat-content">
-                  <h3>{stat.title}</h3>
-                  <div className="stat-value">{stat.value}</div>
-                  <div className={`stat-change ${stat.trend}`}>
-                    {stat.change} <ArrowUpRight size={14} />
-                  </div>
-                </div>
-                <div className="stat-icon">
-                  {stat.icon}
-                </div>
-              </div>
+              <StatCard
+                key={index}
+                title={stat.title}
+                value={stat.value}
+                change={stat.change}
+                trend={stat.trend}
+                icon={stat.icon}
+                subValue={stat.subValue}
+              />
             ))}
           </div>
 
@@ -1215,7 +1265,7 @@ const AdminDashboard = () => {
                         </div>
                         <div className="activity-details">
                           <p>
-                            <strong>{activity.user}</strong> {activity.action} a {activity.type} of ${activity.amount}
+                            <strong>{activity.user}</strong> {activity.action} a {activity.type} of {activity.amount}
                           </p>
                           <span className="activity-time">
                             {activity.time} • {activity.date}
@@ -1270,17 +1320,17 @@ const AdminDashboard = () => {
         </>
       )}
 
-      {/* Lenders Tab */}
-      {activeTab === 'lenders' && (
+      {/* Users Tab */}
+      {activeTab === 'users' && (
         <div className="data-table-container">
           <div className="table-header">
-            <h3>Lenders</h3>
+            <h3>Users</h3>
             <button 
               className="add-button"
               onClick={() => setShowUserModal(true)}
             >
               <Plus size={16} />
-              <span>Add Lender</span>
+              <span>Add User</span>
             </button>
           </div>
           <div className="table-filters">
@@ -1288,16 +1338,17 @@ const AdminDashboard = () => {
               <Search size={16} />
               <input 
                 type="text" 
-                placeholder="Search lenders..." 
-                onChange={handleBorrowerSearch}
+                placeholder="Search users..." 
+                onChange={handleUserSearch}
               />
             </div>
             <div className="filter-dropdown">
               <Filter size={16} />
-              <select>
-                <option>All Status</option>
-                <option>Active</option>
-                <option>Inactive</option>
+              <select onChange={(e) => setRoleFilter(e.target.value)}>
+                <option value="">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
+                <option value="borrower">Borrower</option>
               </select>
             </div>
           </div>
@@ -1313,42 +1364,36 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {users
-                .filter(user => user.role === 'lender')
-                .filter(user => 
-                  user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  user.email.toLowerCase().includes(searchTerm.toLowerCase())
-                )
-                .map(user => (
-                  <tr key={user._id}>
-                    <td>
-                      <div className="user-info">
-                        <UserCircle size={20} />
-                        <span>{user.name}</span>
-                      </div>
-                    </td>
-                    <td>{user.email}</td>
-                    <td>
-                      <span className={`role-badge ${user.role}`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td>{new Date(user.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      <span className={`status-badge ${user.status || 'active'}`}>
-                        {user.status || 'active'}
-                      </span>
-                    </td>
-                    <td>
-                      <button 
-                        className="action-button"
-                        onClick={() => navigate(`/admin/users/${user._id}`)}
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+              {filteredUsers.map(user => (
+                <tr key={user._id}>
+                  <td>
+                    <div className="user-info">
+                      <UserCircle size={20} />
+                      <span>{user.name}</span>
+                    </div>
+                  </td>
+                  <td>{user.email}</td>
+                  <td>
+                    <span className={`role-badge ${user.role}`}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    <span className={`status-badge ${user.status || 'active'}`}>
+                      {user.status || 'active'}
+                    </span>
+                  </td>
+                  <td>
+                    <button 
+                      className="action-button"
+                      onClick={() => navigate(`/admin/users/${user._id}`)}
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -1378,10 +1423,10 @@ const AdminDashboard = () => {
             </div>
             <div className="filter-dropdown">
               <Filter size={16} />
-              <select>
-                <option>All Status</option>
-                <option>Active</option>
-                <option>Inactive</option>
+              <select onChange={(e) => setBorrowerStatusFilter(e.target.value)}>
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
               </select>
             </div>
           </div>
@@ -1497,7 +1542,7 @@ const AdminDashboard = () => {
                     <td>
                       {borrowers.find(b => b._id === (loan.borrower?._id || loan.borrower))?.name || 'Unknown'}
                     </td>
-                    <td>${loan.amount}</td>
+                    <td>{formatCurrency(loan.amount)}</td>
                     <td>{loan.interestRate}%</td>
                     <td>{loan.term} months</td>
                     <td>{loan.purpose}</td>
@@ -1588,7 +1633,7 @@ const AdminDashboard = () => {
                     <td>
                       {loans.find(l => l._id === repayment.loan)?.purpose || 'N/A'}
                     </td>
-                    <td>${repayment.amount}</td>
+                    <td>{formatCurrency(repayment.amount)}</td>
                     <td>{new Date(repayment.createdAt || repayment.date).toLocaleDateString()}</td>
                     <td>{repayment.method || 'Bank Transfer'}</td>
                     <td>

@@ -78,34 +78,44 @@ Credit-Bureau-Management-System/
 └── README.md                                   # Project overview and documentation
 
 
-# REQUIRMENTS
-💳 Credit Bureau Management System
-A comprehensive full-stack application designed to manage and analyze consumer credit data. Built with MongoDB, Node.js, Express, and React.js, the system enables secure credit record management, score computation, and insightful data visualization.
+# Step-by-Step Guide
+Step 1: Clone the Repository
+  Open your terminal and run:
+   git clone https://github.com/your-username/Credit-Bureau-Management-System.git
+     cd Credit-Bureau-Management-System
 
-🚀 Key Features
-✅ Perform full CRUD operations on credit records
+🔧 Backend Setup
+Step 2: Navigate to the Backend Folder
+  cd backend
+Step 3: Create a .env File
+  Create a file named .env in the backend directory:
+   Credit-Bureau-Management-System/
+     └── backend/
+        └── .env
+Step 4: Add the Following Credentials to .env
+  MONGODB_URI=mongodb+srv://Student:s12345@nucleusdb.zdvm9.mongodb.net/credit-bureau?retryWrites=true&w=majority&appName=Nucleusdb
+  PORT=5001
+  JWT_SECRET=9cbd6299cb0075630bfc68946b8f6c97a941dcd3f39ffb9f63e9a5cac2f0b56b2b1f1063f7bb49366928186bf9c8c3d4f89c5de8e89e79dc4c456ac492f203d2
+  JWT_EXPIRES_IN=90d
+Step 5: Install Dependencies
+  npm install
+Step 6: Start the Backend Server
+  npm run server
+  The backend server will start at: http://localhost:5001
 
-📊 Calculate credit scores based on repayment and borrowing behavior
-
-📈 Visualize credit trends and history using interactive charts
-
-🔐 Secure authentication using JWT
-
-🖥️ Responsive and dynamic UI built with React
-
-🧰 Tech Stack
-Layer	Technology
-Database	MongoDB
-Backend	Node.js, Express.js, Mongoose
-Frontend	React.js, Axios
-Visualization	Chart.js
-Auth	JSON Web Tokens (JWT)
-
-
-# Relationship Matrix Table
-From / To	Users (Lender)	Borrowers	Loans	Repayments	CreditReports
-Users	—	1-to-Many	1-to-Many	—	1-to-Many
-Borrowers	Many-to-1	—	1-to-Many	—	1-to-Many
-Loans	Many-to-1	Many-to-1	—	1-to-Many	—
-Repayments	—	—	Many-to-1	—	—
-CreditReports	Many-to-1	Many-to-1	—	(derived from loans & repayments)	—
+🌐 Frontend Setup
+👉 Open a new terminal window or tab (do not stop the backend)
+Step 7: Navigate to the Frontend Folder
+  cd frontend
+Step 8: Create a .env File
+ Create a file named .env in the frontend directory:
+   Credit-Bureau-Management-System/
+      └── frontend/
+           └── .env
+Step 9: Add the Following Credentials to .env
+   REACT_APP_API_URL=http://localhost:5001/api
+   GENERATE_SOURCEMAP=false
+Step 10: Install Dependencies
+   npm install
+Step 11: Start the Frontend Server
+   npm start

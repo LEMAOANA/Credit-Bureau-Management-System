@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import './CreditReports.css';
 import { 
@@ -12,7 +12,23 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { ScaleLoader } from 'react-spinners';
 import { debounce } from 'lodash';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
+
+const formatCurrency = (amount) => {
+  const num = typeof amount === 'string' 
+    ? parseFloat(amount.replace(/[^\d.-]/g, '')) 
+    : Number(amount);
+  
+  if (isNaN(num)) {
+    console.warn('Invalid amount:', amount);
+    return 'N/A';
+  }
+  
+  return `M${num.toLocaleString('en-LS', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+};
 
 const CreditReports = () => {
   const [borrowers, setBorrowers] = useState([]);
@@ -24,7 +40,7 @@ const CreditReports = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [chartData, setChartData] = useState([]);
   const [showHelp, setShowHelp] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const chartRef = useRef(null);
 
   const debouncedSearch = useCallback(
     debounce((term) => {
@@ -62,10 +78,21 @@ const CreditReports = () => {
     setErrorMessage('');
     try {
       const res = await axios.get(`http://localhost:5001/api/creditReports/${selectedBorrower}`);
+      
       if (res.data.success) {
-        setCreditReport(res.data.data);
-        prepareChartData(res.data.data.loanDetails);
-        if (res.data.data.loanDetails.length === 0) {
+        const normalizedLoans = res.data.data.loanDetails.map(loan => ({
+          ...loan,
+          loanAmount: loan.loanAmount ?? loan.amount ?? 0,
+          totalRepaymentAmount: loan.totalRepaymentAmount ?? loan.repayment ?? 0
+        }));
+        
+        setCreditReport({
+          ...res.data.data,
+          loanDetails: normalizedLoans
+        });
+        prepareChartData(normalizedLoans);
+        
+        if (normalizedLoans.length === 0) {
           setErrorMessage("This borrower has no loan history.");
         }
       }
@@ -80,69 +107,105 @@ const CreditReports = () => {
   const prepareChartData = (loans) => {
     const data = loans.map(loan => ({
       name: loan.purpose?.length > 10 ? `${loan.purpose.substring(0, 10)}...` : loan.purpose || 'N/A',
-      amount: loan.loanAmount || 0,
-      repayment: loan.totalRepaymentAmount || 0,
+      amount: Number(loan.loanAmount) || 0,
+      repayment: Number(loan.totalRepaymentAmount) || 0,
       status: loan.status || 'unknown'
     }));
     setChartData(data);
   };
 
   const handleExportPDF = () => {
-    if (!creditReport) return;
+    if (!creditReport || filteredReport.length === 0) {
+      setErrorMessage('No data available to export');
+      return;
+    }
     
     setLoading(true);
     try {
-      const doc = new jsPDF();
-      
-      // Add title
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm'
+      });
+
+      // Header
       doc.setFontSize(18);
-      doc.setTextColor(darkMode ? '#f5f5f5' : '#333');
-      doc.text(`Credit Report for ${creditReport.borrowerInfo.name}`, 14, 20);
-      
-      // Add borrower info
+      doc.setTextColor(30, 41, 59);
+      doc.text(`Credit Report for ${creditReport.borrowerInfo.name}`, 105, 20, { align: 'center' });
+
+      // Borrower Info
       doc.setFontSize(12);
-      doc.text(`Email: ${creditReport.borrowerInfo.email}`, 14, 30);
-      doc.text(`Credit Score: ${creditReport.creditScore} (${getCreditScoreInfo(creditReport.creditScore).category})`, 14, 40);
+      doc.text(`Email: ${creditReport.borrowerInfo.email}`, 20, 30);
+      doc.text(`Credit Score: ${creditReport.creditScore} (${getCreditScoreInfo(creditReport.creditScore).category})`, 20, 40);
+
+      // Summary
+      doc.setFontSize(14);
+      doc.text('Summary:', 20, 50);
+      doc.setFontSize(12);
       
-      // Add summary cards data
       const totalLoans = creditReport.loanDetails.length;
       const activeLoans = creditReport.loanDetails.filter(l => l.status === 'active').length;
-      const totalBorrowed = creditReport.loanDetails.reduce((sum, loan) => sum + (loan.loanAmount || 0), 0);
-      const totalRepayment = creditReport.loanDetails.reduce((sum, loan) => sum + (loan.totalRepaymentAmount || 0), 0);
-      
-      doc.text('Summary:', 14, 50);
-      doc.text(`Total Loans: ${totalLoans}`, 14, 60);
-      doc.text(`Active Loans: ${activeLoans}`, 14, 70);
-      doc.text(`Total Borrowed: ${totalBorrowed.toLocaleString()}`, 14, 80);
-      doc.text(`Total Repayment: ${totalRepayment.toLocaleString()}`, 14, 90);
-      
-      // Add loan table
-      doc.autoTable({
-        startY: 100,
-        head: [['Loan ID', 'Purpose', 'Status', 'Amount', 'Repayment', 'Interest Rate']],
-        body: filteredReport.map(loan => [
+      const totalBorrowed = creditReport.loanDetails.reduce((sum, loan) => sum + (Number(loan.loanAmount) || 0), 0);
+      const totalRepayment = creditReport.loanDetails.reduce((sum, loan) => sum + (Number(loan.totalRepaymentAmount) || 0), 0);
+
+      doc.text(`• Total Loans: ${totalLoans}`, 20, 60);
+      doc.text(`• Active Loans: ${activeLoans}`, 20, 65);
+      doc.text(`• Total Borrowed: ${formatCurrency(totalBorrowed)}`, 20, 70);
+      doc.text(`• Total Repayment: ${formatCurrency(totalRepayment)}`, 20, 75);
+
+      // Table Data
+      const tableData = filteredReport.map(loan => {
+        const amount = Number(loan.loanAmount) || 0;
+        const repayment = Number(loan.totalRepaymentAmount) || 0;
+        const remaining = amount - repayment;
+
+        return [
           loan.loanId || 'N/A',
           loan.purpose || 'N/A',
           loan.status || 'Unknown',
-          loan.loanAmount != null ? loan.loanAmount.toLocaleString() : 'N/A',
-          loan.totalRepaymentAmount != null ? loan.totalRepaymentAmount.toLocaleString() : 'N/A',
-          loan.interestRate != null ? `${loan.interestRate}%` : 'N/A'
-        ]),
-        theme: 'grid',
-        headStyles: {
-          fillColor: darkMode ? '#374151' : '#1f2937',
-          textColor: darkMode ? '#f5f5f5' : '#ffffff'
-        },
-        alternateRowStyles: {
-          fillColor: darkMode ? '#2a2a2a' : '#f9f9f9'
-        }
+          formatCurrency(amount),
+          formatCurrency(repayment),
+          loan.interestRate != null ? `${loan.interestRate}%` : 'N/A',
+          remaining >= 0 ? formatCurrency(remaining) : 'Paid'
+        ];
       });
-      
-      // Save the PDF
+
+      // Create table using autoTable plugin
+      autoTable(doc, {
+        startY: 85,
+        head: [['Loan ID', 'Purpose', 'Status', 'Amount (M)', 'Repayment (M)', 'Interest Rate', 'Remaining (M)']],
+        body: tableData,
+        headStyles: {
+          fillColor: [30, 41, 59],
+          textColor: 255,
+          fontSize: 10,
+          halign: 'center'
+        },
+        columnStyles: {
+          3: { halign: 'right' },
+          4: { halign: 'right' },
+          6: { halign: 'right' }
+        },
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          overflow: 'linebreak'
+        },
+        margin: { top: 85 }
+      });
+
+      // Footer
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(
+        `Generated on ${new Date().toLocaleString()}`,
+        14,
+        doc.internal.pageSize.height - 10
+      );
+
       doc.save(`credit-report-${creditReport.borrowerInfo.borrowerId}-${new Date().toISOString().slice(0,10)}.pdf`);
     } catch (err) {
-      console.error('Error exporting PDF:', err);
-      setErrorMessage('Failed to export PDF report');
+      console.error('PDF Export Error:', err);
+      setErrorMessage('Failed to generate PDF. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -153,24 +216,26 @@ const CreditReports = () => {
     
     setLoading(true);
     try {
-      // Create CSV header
       let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Loan ID,Purpose,Status,Amount,Repayment,Interest Rate\n";
+      csvContent += "Loan ID,Purpose,Status,Amount (M),Repayment (M),Interest Rate,Remaining (M)\n";
       
-      // Add data rows
       filteredReport.forEach(loan => {
+        const amount = Number(loan.loanAmount) || 0;
+        const repayment = Number(loan.totalRepaymentAmount) || 0;
+        const remaining = amount - repayment;
+        
         const row = [
           `"${loan.loanId || 'N/A'}"`,
           `"${loan.purpose || 'N/A'}"`,
           `"${loan.status || 'Unknown'}"`,
-          loan.loanAmount != null ? loan.loanAmount.toLocaleString() : 'N/A',
-          loan.totalRepaymentAmount != null ? loan.totalRepaymentAmount.toLocaleString() : 'N/A',
-          loan.interestRate != null ? `${loan.interestRate}%` : 'N/A'
+          formatCurrency(amount),
+          formatCurrency(repayment),
+          loan.interestRate != null ? `${loan.interestRate}%` : 'N/A',
+          remaining >= 0 ? formatCurrency(remaining) : 'Paid'
         ].join(",");
         csvContent += row + "\n";
       });
       
-      // Create download link
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
@@ -186,20 +251,50 @@ const CreditReports = () => {
     }
   };
 
+  const handleExportChart = () => {
+    if (!creditReport) return;
+    
+    try {
+      const canvas = document.createElement('canvas');
+      const svg = chartRef.current?.querySelector('svg');
+      
+      if (svg) {
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const img = new Image();
+        
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          
+          const dataURL = canvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          link.href = dataURL;
+          link.download = `credit-chart-${creditReport.borrowerInfo.borrowerId}-${new Date().toISOString().slice(0,10)}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        };
+        
+        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+      }
+    } catch (err) {
+      console.error('Error exporting chart:', err);
+      setErrorMessage('Failed to export chart');
+    }
+  };
+
   const handleSearchChange = (e) => {
     debouncedSearch(e.target.value);
   };
 
   const getCreditScoreInfo = (score) => {
-    if (score >= 800) return { category: 'Excellent', color: '#2e7d32' };
-    if (score >= 740) return { category: 'Very Good', color: '#689f38' };
-    if (score >= 670) return { category: 'Good', color: '#fbc02d' };
-    if (score >= 580) return { category: 'Fair', color: '#ff9800' };
-    return { category: 'Poor', color: '#d32f2f' };
-  };
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
+    if (score >= 800) return { category: 'Excellent', color: '#10b981' };
+    if (score >= 740) return { category: 'Very Good', color: '#34d399' };
+    if (score >= 670) return { category: 'Good', color: '#fbbf24' };
+    if (score >= 580) return { category: 'Fair', color: '#f97316' };
+    return { category: 'Poor', color: '#ef4444' };
   };
 
   const filteredReport = creditReport ? 
@@ -211,17 +306,12 @@ const CreditReports = () => {
     }) : [];
 
   return (
-    <div className={`credit-reports-container ${darkMode ? 'dark-mode' : ''}`}>
+    <div className="credit-reports-container">
       <div className="header-section">
         <h2>Credit Report Management</h2>
-        <div className="header-controls">
-          <button onClick={toggleDarkMode} className="mode-toggle" aria-label="Toggle dark mode">
-            {darkMode ? '☀️' : '🌙'}
-          </button>
-          <button onClick={() => setShowHelp(!showHelp)} className="help-btn" aria-label="Help">
-            <FaInfoCircle />
-          </button>
-        </div>
+        <button onClick={() => setShowHelp(!showHelp)} className="help-btn" aria-label="Help">
+          <FaInfoCircle />
+        </button>
       </div>
 
       {showHelp && (
@@ -322,15 +412,25 @@ const CreditReports = () => {
 
           <div className="chart-container">
             <h4>Loan Amount vs Repayment</h4>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={300} ref={chartRef}>
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="#4b5563" />
+                <XAxis dataKey="name" stroke="#9ca3af" />
+                <YAxis 
+                  stroke="#9ca3af" 
+                  tickFormatter={(value) => `M${value.toLocaleString()}`}
+                />
+                <Tooltip 
+                  formatter={(value) => [formatCurrency(value), value === chartData[0]?.amount ? 'Loan Amount' : 'Total Repayment']}
+                  contentStyle={{
+                    backgroundColor: '#1f2937',
+                    borderColor: '#4b5563',
+                    color: '#f3f4f6'
+                  }}
+                />
                 <Legend />
-                <Bar dataKey="amount" fill="#8884d8" name="Loan Amount" />
-                <Bar dataKey="repayment" fill="#82ca9d" name="Total Repayment" />
+                <Bar dataKey="amount" fill="#8884d8" name="Loan Amount (M)" />
+                <Bar dataKey="repayment" fill="#82ca9d" name="Total Repayment (M)" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -346,11 +446,11 @@ const CreditReports = () => {
             </div>
             <div className="summary-card">
               <h5>Total Borrowed</h5>
-              <p>{creditReport.loanDetails.reduce((sum, loan) => sum + (loan.loanAmount || 0), 0).toLocaleString()}</p>
+              <p>{formatCurrency(creditReport.loanDetails.reduce((sum, loan) => sum + (Number(loan.loanAmount) || 0), 0))}</p>
             </div>
             <div className="summary-card">
               <h5>Total Repayment</h5>
-              <p>{creditReport.loanDetails.reduce((sum, loan) => sum + (loan.totalRepaymentAmount || 0), 0).toLocaleString()}</p>
+              <p>{formatCurrency(creditReport.loanDetails.reduce((sum, loan) => sum + (Number(loan.totalRepaymentAmount) || 0), 0))}</p>
             </div>
           </div>
 
@@ -361,30 +461,40 @@ const CreditReports = () => {
                   <th>Loan ID</th>
                   <th>Purpose</th>
                   <th>Status</th>
-                  <th>Amount</th>
-                  <th>Repayment</th>
+                  <th>Amount (M)</th>
+                  <th>Repayment (M)</th>
                   <th>Interest Rate</th>
+                  <th>Remaining (M)</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredReport.length > 0 ? (
-                  filteredReport.map(loan => (
-                    <tr key={loan.loanId || Math.random()} className={`status-${loan.status?.toLowerCase() || 'unknown'}`}>
-                      <td>{loan.loanId || 'N/A'}</td>
-                      <td>{loan.purpose || 'N/A'}</td>
-                      <td>
-                        <span className={`status-badge ${loan.status?.toLowerCase() || 'unknown'}`}>
-                          {loan.status || 'Unknown'}
-                        </span>
-                      </td>
-                      <td>{loan.loanAmount != null ? loan.loanAmount.toLocaleString() : 'N/A'}</td>
-                      <td>{loan.totalRepaymentAmount != null ? loan.totalRepaymentAmount.toLocaleString() : 'N/A'}</td>
-                      <td>{loan.interestRate != null ? `${loan.interestRate}%` : 'N/A'}</td>
-                    </tr>
-                  ))
+                  filteredReport.map(loan => {
+                    const amount = Number(loan.loanAmount) || 0;
+                    const repayment = Number(loan.totalRepaymentAmount) || 0;
+                    const remaining = amount - repayment;
+                    
+                    return (
+                      <tr key={loan.loanId || Math.random()} className={`status-${loan.status?.toLowerCase() || 'unknown'}`}>
+                        <td>{loan.loanId || 'N/A'}</td>
+                        <td>{loan.purpose || 'N/A'}</td>
+                        <td>
+                          <span className={`status-badge ${loan.status?.toLowerCase() || 'unknown'}`}>
+                            {loan.status || 'Unknown'}
+                          </span>
+                        </td>
+                        <td className="amount-cell">{formatCurrency(amount)}</td>
+                        <td className="amount-cell">{formatCurrency(repayment)}</td>
+                        <td>{loan.interestRate != null ? `${loan.interestRate}%` : 'N/A'}</td>
+                        <td className={`amount-cell ${remaining > 0 ? 'remaining-red' : 'remaining-green'}`}>
+                          {remaining >= 0 ? formatCurrency(remaining) : 'Paid'}
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td colSpan="6" className="no-results">
+                    <td colSpan="7" className="no-results">
                       No loans match your search criteria
                     </td>
                   </tr>
@@ -400,7 +510,7 @@ const CreditReports = () => {
             <button onClick={handleExportCSV} className="export-btn csv">
               <FaDownload /> Export to CSV
             </button>
-            <button className="export-btn chart" disabled>
+            <button onClick={handleExportChart} className="export-btn chart">
               <FaChartLine /> Export Chart
             </button>
           </div>
