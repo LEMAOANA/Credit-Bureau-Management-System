@@ -21,7 +21,9 @@ import {
   Calendar,
   Filter,
   Search,
-  Plus
+  Plus,
+  Download,
+  Printer
 } from 'lucide-react';
 import { Bar, Pie, Line } from 'react-chartjs-2';
 import { 
@@ -53,13 +55,24 @@ ChartJS.register(
   LineElement
 );
 
-// Currency formatter for Lesotho Maloti
+// Enhanced currency formatter for Lesotho Maloti
 const formatCurrency = (amount) => {
+  if (isNaN(amount)) return 'M0.00';
   return new Intl.NumberFormat('en-LS', {
     style: 'currency',
     currency: 'LSL',
-    minimumFractionDigits: 2
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(amount);
+};
+
+// Format date for reports
+const formatReportDate = (date) => {
+  return new Date(date).toLocaleDateString('en-LS', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 };
 
 const AdminDashboard = () => {
@@ -72,12 +85,15 @@ const AdminDashboard = () => {
   const [showLoanProcessing, setShowLoanProcessing] = useState(false);
   const [showNewLoanModal, setShowNewLoanModal] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)));
   const [endDate, setEndDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [borrowerStatusFilter, setBorrowerStatusFilter] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+  const [reportData, setReportData] = useState(null);
+  const [reportType, setReportType] = useState('summary');
 
   // Data states
   const [users, setUsers] = useState([]);
@@ -137,10 +153,21 @@ const AdminDashboard = () => {
         const loansData = await loansRes.json();
         const repaymentsData = await repaymentsRes.json();
 
+        // Ensure all amounts are numbers
+        const processedRepayments = (repaymentsData.data || repaymentsData).map(r => ({
+          ...r,
+          amount: typeof r.amount === 'number' ? r.amount : 0
+        }));
+
+        const processedLoans = (loansData.data || loansData).map(loan => ({
+          ...loan,
+          amount: typeof loan.amount === 'number' ? loan.amount : 0
+        }));
+
         setUsers(usersData.data || usersData);
         setBorrowers(borrowersData.data || borrowersData);
-        setLoans(loansData.data || loansData);
-        setRepayments(repaymentsData.data || repaymentsData);
+        setLoans(processedLoans);
+        setRepayments(processedRepayments);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -150,8 +177,6 @@ const AdminDashboard = () => {
     };
 
     fetchData();
-
-    // Refresh data every 5 minutes
     const interval = setInterval(fetchData, 300000);
     return () => clearInterval(interval);
   }, []);
@@ -164,7 +189,6 @@ const AdminDashboard = () => {
   }, [users, borrowers, loans, repayments, timeFilter, startDate, endDate]);
 
   const processDashboardData = () => {
-    // Filter data based on date range
     const filteredLoans = loans.filter(loan => 
       new Date(loan.createdAt || loan.date) >= startDate && 
       new Date(loan.createdAt || loan.date) <= endDate
@@ -175,16 +199,16 @@ const AdminDashboard = () => {
       new Date(repayment.createdAt || repayment.date) <= endDate
     );
 
-    // Calculate total loan amounts
-    const totalLoanAmount = loans.reduce((sum, loan) => sum + loan.amount, 0);
-    const filteredLoanAmount = filteredLoans.reduce((sum, loan) => sum + loan.amount, 0);
+    // Calculate totals with proper number validation
+    const totalLoanAmount = loans.reduce((sum, loan) => sum + (loan.amount || 0), 0);
+    const filteredLoanAmount = filteredLoans.reduce((sum, loan) => sum + (loan.amount || 0), 0);
     const activeLoanAmount = filteredLoans
       .filter(l => l.status === 'Approved')
-      .reduce((sum, loan) => sum + loan.amount, 0);
+      .reduce((sum, loan) => sum + (loan.amount || 0), 0);
     const defaultedAmount = filteredLoans
       .filter(l => l.status === 'Defaulted')
-      .reduce((sum, loan) => sum + loan.amount, 0);
-    const repaymentAmount = filteredRepayments.reduce((sum, r) => sum + r.amount, 0);
+      .reduce((sum, loan) => sum + (loan.amount || 0), 0);
+    const repaymentAmount = filteredRepayments.reduce((sum, r) => sum + (r.amount || 0), 0);
 
     // Calculate stats
     const calculatedStats = [
@@ -236,7 +260,7 @@ const AdminDashboard = () => {
       }
     ];
 
-    // Generate recent activities
+    // Generate recent activities with safe amount handling
     const recentActivities = [
       ...filteredRepayments
         .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))
@@ -246,7 +270,7 @@ const AdminDashboard = () => {
           type: "repayment",
           action: "received",
           user: borrowers.find(b => b._id === (repayment.borrower?._id || repayment.borrower))?.name || 'Unknown',
-          amount: formatCurrency(repayment.amount),
+          amount: formatCurrency(repayment.amount || 0),
           time: new Date(repayment.createdAt || repayment.date).toLocaleTimeString(),
           date: new Date(repayment.createdAt || repayment.date).toLocaleDateString()
         })),
@@ -259,7 +283,7 @@ const AdminDashboard = () => {
           type: "loan",
           action: "approved",
           user: borrowers.find(b => b._id === (loan.borrower?._id || loan.borrower))?.name || 'Unknown',
-          amount: formatCurrency(loan.amount),
+          amount: formatCurrency(loan.amount || 0),
           time: new Date(loan.createdAt || loan.date).toLocaleTimeString(),
           date: new Date(loan.createdAt || loan.date).toLocaleDateString()
         }))
@@ -347,7 +371,7 @@ const AdminDashboard = () => {
             const date = new Date(r.createdAt || r.date);
             return date.getMonth() === month.getMonth() && date.getFullYear() === month.getFullYear();
           })
-          .reduce((sum, r) => sum + r.amount, 0)
+          .reduce((sum, r) => sum + (r.amount || 0), 0)
       };
     });
 
@@ -400,7 +424,6 @@ const AdminDashboard = () => {
   };
 
   const calculateChange = (currentValue, daysBack) => {
-    // This is a simplified calculation - in a real app you'd compare with historical data
     const randomChange = (Math.random() * 10).toFixed(1);
     return `${randomChange}%`;
   };
@@ -418,31 +441,83 @@ const AdminDashboard = () => {
     setExpandedAlert(expandedAlert === alertId ? null : alertId);
   };
 
-  const handleGenerateReport = async () => {
+  const handleGenerateReport = async (type = 'summary') => {
     try {
-      const response = await fetch('http://localhost:5001/api/reports/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ startDate, endDate })
-      });
+      setReportType(type);
       
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `loan-report-${new Date().toISOString().split('T')[0]}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } else {
-        alert('Failed to generate report');
-      }
+      // Prepare report data structure
+      const report = {
+        title: type === 'summary' ? 'Loan Portfolio Summary' : 
+              type === 'detailed' ? 'Detailed Loan Report' : 'Credit Risk Analysis',
+        dateRange: `${formatReportDate(startDate)} - ${formatReportDate(endDate)}`,
+        generatedAt: new Date().toISOString(),
+        stats: {
+          totalLoans: loans.length,
+          totalLoanAmount: loans.reduce((sum, loan) => sum + (loan.amount || 0), 0),
+          activeLoans: loans.filter(l => l.status === 'Approved').length,
+          activeLoanAmount: loans.filter(l => l.status === 'Approved')
+                               .reduce((sum, loan) => sum + (loan.amount || 0), 0),
+          defaultedLoans: loans.filter(l => l.status === 'Defaulted').length,
+          defaultedAmount: loans.filter(l => l.status === 'Defaulted')
+                              .reduce((sum, loan) => sum + (loan.amount || 0), 0),
+          repaymentAmount: repayments.reduce((sum, r) => sum + (r.amount || 0), 0)
+        },
+        topBorrowers: borrowers
+          .map(b => ({
+            ...b,
+            loanCount: loans.filter(l => l.borrower?._id === b._id || l.borrower === b._id).length,
+            totalBorrowed: loans.filter(l => l.borrower?._id === b._id || l.borrower === b._id)
+                              .reduce((sum, loan) => sum + (loan.amount || 0), 0),
+            lastRepayment: repayments
+              .filter(r => r.borrower?._id === b._id || r.borrower === b._id)
+              .sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+          }))
+          .sort((a, b) => b.totalBorrowed - a.totalBorrowed)
+          .slice(0, 5),
+        loanStatusDistribution: loans.reduce((acc, loan) => {
+          acc[loan.status] = (acc[loan.status] || 0) + 1;
+          return acc;
+        }, {}),
+        repaymentTrend: Array(12).fill(0).map((_, i) => {
+          const month = new Date();
+          month.setMonth(month.getMonth() - (11 - i));
+          return {
+            month: month.toLocaleString('default', { month: 'short' }),
+            year: month.getFullYear(),
+            amount: repayments
+              .filter(r => {
+                const date = new Date(r.date);
+                return date.getMonth() === month.getMonth() && date.getFullYear() === month.getFullYear();
+              })
+              .reduce((sum, r) => sum + (r.amount || 0), 0)
+          };
+        }),
+        riskAnalysis: type === 'risk' ? {
+          defaultRate: loans.length > 0 ? 
+            (loans.filter(l => l.status === 'Defaulted').length / loans.length) * 100 : 0,
+          overdueLoans: loans.filter(l => 
+            l.status === 'Approved' && 
+            new Date(l.dueDate) < new Date()
+          ).length,
+          highRiskBorrowers: borrowers
+            .map(b => ({
+              ...b,
+              defaultedLoans: loans.filter(l => 
+                (l.borrower?._id === b._id || l.borrower === b._id) && 
+                l.status === 'Defaulted'
+              ).length
+            }))
+            .filter(b => b.defaultedLoans > 0)
+            .sort((a, b) => b.defaultedLoans - a.defaultedLoans)
+        } : null
+      };
+
+      setReportData(report);
+      setShowReportModal(true);
+
     } catch (error) {
       console.error('Report generation error:', error);
-      alert('Error generating report');
+      alert('Error preparing report');
     }
   };
 
@@ -463,7 +538,7 @@ const AdminDashboard = () => {
         alert(`Loans ${processingAction}d successfully`);
         setShowLoanProcessing(false);
         setSelectedLoans([]);
-        window.location.reload(); // Refresh data
+        window.location.reload();
       } else {
         alert('Failed to process loans');
       }
@@ -482,7 +557,7 @@ const AdminDashboard = () => {
         },
         body: JSON.stringify({
           ...newPayment,
-          amount: parseFloat(newPayment.amount),
+          amount: parseFloat(newPayment.amount) || 0,
           date: new Date(newPayment.date).toISOString()
         })
       });
@@ -497,7 +572,7 @@ const AdminDashboard = () => {
           date: new Date().toISOString().split('T')[0],
           loanId: ''
         });
-        window.location.reload(); // Refresh data
+        window.location.reload();
       } else {
         alert('Failed to record payment');
       }
@@ -516,9 +591,9 @@ const AdminDashboard = () => {
         },
         body: JSON.stringify({
           ...newLoan,
-          amount: parseFloat(newLoan.amount),
-          interestRate: parseFloat(newLoan.interestRate),
-          term: parseInt(newLoan.term)
+          amount: parseFloat(newLoan.amount) || 0,
+          interestRate: parseFloat(newLoan.interestRate) || 8.5,
+          term: parseInt(newLoan.term) || 12
         })
       });
       
@@ -533,7 +608,7 @@ const AdminDashboard = () => {
           purpose: 'Personal',
           status: 'Pending'
         });
-        window.location.reload(); // Refresh data
+        window.location.reload();
       } else {
         alert('Failed to create loan');
       }
@@ -562,7 +637,7 @@ const AdminDashboard = () => {
           role: 'user',
           password: ''
         });
-        window.location.reload(); // Refresh data
+        window.location.reload();
       } else {
         alert('Failed to create user');
       }
@@ -723,6 +798,177 @@ const AdminDashboard = () => {
 
   return (
     <div className="dashboard">
+      {/* Report Modal */}
+      {showReportModal && (
+        <div className="modal-overlay">
+          <div className="modal report-modal">
+            <div className="modal-header">
+              <h3>{reportData?.title || 'Loan Report'}</h3>
+              <div className="report-actions">
+                <button className="print-button" onClick={() => window.print()}>
+                  <Printer size={16} /> Print
+                </button>
+                <button 
+                  className="download-button"
+                  onClick={() => {
+                    // In a real app, this would download the PDF
+                    alert('Report download would be triggered here');
+                  }}
+                >
+                  <Download size={16} /> Download PDF
+                </button>
+                <button onClick={() => setShowReportModal(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="modal-body report-body">
+              {reportData && (
+                <>
+                  <div className="report-header">
+                    <div className="report-meta">
+                      <p>Date Range: {reportData.dateRange}</p>
+                      <p>Generated: {formatReportDate(reportData.generatedAt)}</p>
+                    </div>
+                    <div className="report-logo">
+                      <h2>Loan Management System</h2>
+                      <p>Lesotho Maloti (LSL/M)</p>
+                    </div>
+                  </div>
+
+                  <div className="report-summary">
+                    <h4>Portfolio Summary</h4>
+                    <div className="summary-grid">
+                      <div className="summary-card">
+                        <h5>Total Loans</h5>
+                        <p>{reportData.stats.totalLoans}</p>
+                        <p>{formatCurrency(reportData.stats.totalLoanAmount)}</p>
+                      </div>
+                      <div className="summary-card">
+                        <h5>Active Loans</h5>
+                        <p>{reportData.stats.activeLoans}</p>
+                        <p>{formatCurrency(reportData.stats.activeLoanAmount)}</p>
+                      </div>
+                      <div className="summary-card">
+                        <h5>Defaulted Loans</h5>
+                        <p>{reportData.stats.defaultedLoans}</p>
+                        <p>{formatCurrency(reportData.stats.defaultedAmount)}</p>
+                      </div>
+                      <div className="summary-card">
+                        <h5>Total Repayments</h5>
+                        <p>{repayments.length}</p>
+                        <p>{formatCurrency(reportData.stats.repaymentAmount)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {reportType === 'detailed' && (
+                    <div className="report-section">
+                      <h4>Loan Status Distribution</h4>
+                      <div className="status-distribution">
+                        {Object.entries(reportData.loanStatusDistribution).map(([status, count]) => (
+                          <div key={status} className="status-item">
+                            <span className="status-label">{status}</span>
+                            <span className="status-value">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="report-section">
+                    <h4>Top Borrowers</h4>
+                    <table className="report-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Loans</th>
+                          <th>Total Borrowed</th>
+                          <th>Last Repayment</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportData.topBorrowers.map(borrower => (
+                          <tr key={borrower._id}>
+                            <td>{borrower.name}</td>
+                            <td>{borrower.loanCount}</td>
+                            <td>{formatCurrency(borrower.totalBorrowed)}</td>
+                            <td>
+                              {borrower.lastRepayment 
+                                ? `${formatCurrency(borrower.lastRepayment.amount)} on ${formatReportDate(borrower.lastRepayment.date)}`
+                                : 'No repayments'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {reportType === 'risk' && reportData.riskAnalysis && (
+                    <div className="report-section">
+                      <h4>Risk Analysis</h4>
+                      <div className="risk-metrics">
+                        <div className="risk-card">
+                          <h5>Default Rate</h5>
+                          <p>{reportData.riskAnalysis.defaultRate.toFixed(1)}%</p>
+                        </div>
+                        <div className="risk-card">
+                          <h5>Overdue Loans</h5>
+                          <p>{reportData.riskAnalysis.overdueLoans}</p>
+                        </div>
+                        <div className="risk-card">
+                          <h5>High-Risk Borrowers</h5>
+                          <p>{reportData.riskAnalysis.highRiskBorrowers.length}</p>
+                        </div>
+                      </div>
+
+                      {reportData.riskAnalysis.highRiskBorrowers.length > 0 && (
+                        <div className="risk-borrowers">
+                          <h5>High-Risk Borrower Details</h5>
+                          <table className="report-table">
+                            <thead>
+                              <tr>
+                                <th>Name</th>
+                                <th>Defaulted Loans</th>
+                                <th>Total Defaulted</th>
+                                <th>Contact</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {reportData.riskAnalysis.highRiskBorrowers.map(borrower => (
+                                <tr key={borrower._id}>
+                                  <td>{borrower.name}</td>
+                                  <td>{borrower.defaultedLoans}</td>
+                                  <td>
+                                    {formatCurrency(loans
+                                      .filter(l => 
+                                        (l.borrower?._id === borrower._id || l.borrower === borrower._id) && 
+                                        l.status === 'Defaulted'
+                                      )
+                                      .reduce((sum, loan) => sum + (loan.amount || 0), 0)
+                                    )}
+                                  </td>
+                                  <td>{borrower.phone || borrower.email}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="report-footer">
+                    <p>Generated by Loan Management System</p>
+                    <p>Confidential - For internal use only</p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Payment Modal */}
       {showPaymentModal && (
         <div className="modal-overlay">
@@ -1070,13 +1316,20 @@ const AdminDashboard = () => {
               }
             />
           </div>
-          <button 
-            className="generate-report-button"
-            onClick={handleGenerateReport}
-          >
-            <FileText size={16} />
-            <span>Generate Report</span>
-          </button>
+          <div className="report-dropdown">
+            <button 
+              className="generate-report-button"
+              onClick={() => handleGenerateReport('summary')}
+            >
+              <FileText size={16} />
+              <span>Generate Report</span>
+            </button>
+            <div className="report-options">
+              <button onClick={() => handleGenerateReport('summary')}>Summary Report</button>
+              <button onClick={() => handleGenerateReport('detailed')}>Detailed Report</button>
+              <button onClick={() => handleGenerateReport('risk')}>Risk Analysis</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1619,38 +1872,44 @@ const AdminDashboard = () => {
             </thead>
             <tbody>
               {repayments
-                .filter(repayment => 
-                  (borrowers.find(b => b._id === (repayment.borrower?._id || repayment.borrower))?.name || '')
-                    .toLowerCase()
-                    .includes(searchTerm.toLowerCase()) ||
-                  repayment.amount.toString().includes(searchTerm)
-                )
-                .map(repayment => (
-                  <tr key={repayment._id}>
-                    <td>
-                      {borrowers.find(b => b._id === (repayment.borrower?._id || repayment.borrower))?.name || 'Unknown'}
-                    </td>
-                    <td>
-                      {loans.find(l => l._id === repayment.loan)?.purpose || 'N/A'}
-                    </td>
-                    <td>{formatCurrency(repayment.amount)}</td>
-                    <td>{new Date(repayment.createdAt || repayment.date).toLocaleDateString()}</td>
-                    <td>{repayment.method || 'Bank Transfer'}</td>
-                    <td>
-                      <span className="status-badge completed">
-                        Completed
-                      </span>
-                    </td>
-                    <td>
-                      <button 
-                        className="action-button"
-                        onClick={() => navigate(`/admin/repayments/${repayment._id}`)}
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                .filter(repayment => {
+                  const amount = typeof repayment.amount === 'number' ? repayment.amount : 0;
+                  return (
+                    (borrowers.find(b => b._id === (repayment.borrower?._id || repayment.borrower))?.name || '')
+                      .toLowerCase()
+                      .includes(searchTerm.toLowerCase()) ||
+                    amount.toString().includes(searchTerm)
+                  );
+                })
+                .map(repayment => {
+                  const amount = typeof repayment.amount === 'number' ? repayment.amount : 0;
+                  return (
+                    <tr key={repayment._id}>
+                      <td>
+                        {borrowers.find(b => b._id === (repayment.borrower?._id || repayment.borrower))?.name || 'Unknown'}
+                      </td>
+                      <td>
+                        {loans.find(l => l._id === repayment.loan)?.purpose || 'N/A'}
+                      </td>
+                      <td>{formatCurrency(amount)}</td>
+                      <td>{new Date(repayment.createdAt || repayment.date).toLocaleDateString()}</td>
+                      <td>{repayment.method || 'Bank Transfer'}</td>
+                      <td>
+                        <span className="status-badge completed">
+                          Completed
+                        </span>
+                      </td>
+                      <td>
+                        <button 
+                          className="action-button"
+                          onClick={() => navigate(`/admin/repayments/${repayment._id}`)}
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
@@ -1681,10 +1940,10 @@ const AdminDashboard = () => {
         </button>
         <button 
           className="quick-action"
-          onClick={() => navigate('/admin/credit-reports')}
+          onClick={() => handleGenerateReport('summary')}
         >
           <FileText size={18} />
-          <span>Credit Reports</span>
+          <span>Generate Report</span>
         </button>
       </div>
     </div>
