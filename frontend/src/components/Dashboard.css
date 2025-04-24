@@ -46,6 +46,60 @@
   margin-bottom: 25px;
   gap: 5px;
 }
+/* Report Dropdown */
+.report-dropdown {
+  position: relative;
+}
+
+.generate-report-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background-color: var(--primary-blue);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.generate-report-button:hover {
+  background-color: #2563eb;
+}
+
+.report-options {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.5rem;
+  min-width: 180px;
+  background-color: var(--card-bg);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 10;
+  display: none;
+}
+
+.report-dropdown:hover .report-options {
+  display: block;
+}
+
+.report-options button {
+  width: 100%;
+  text-align: left;
+  padding: 0.625rem 1rem;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.report-options button:hover {
+  background-color: var(--hover);
+}
 
 .tab-button {
   padding: 10px 20px;

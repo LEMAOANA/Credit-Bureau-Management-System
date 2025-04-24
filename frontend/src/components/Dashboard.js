@@ -153,19 +153,41 @@ const AdminDashboard = () => {
         const loansData = await loansRes.json();
         const repaymentsData = await repaymentsRes.json();
 
-        // Ensure all amounts are numbers
+        console.log("API Response - Repayments:", repaymentsData); // Debug log
+
+        // Process repayments with proper field mapping
         const processedRepayments = (repaymentsData.data || repaymentsData).map(r => ({
-          ...r,
-          amount: typeof r.amount === 'number' ? r.amount : 0
+          id: r._id || r.id,
+          borrowerId: r.borrower?._id || r.borrower || r.borrowerId,
+          loanId: r.loan?._id || r.loan || r.loanId,
+          amount: typeof (r.amount || r.paymentAmount) === 'number' ? (r.amount || r.paymentAmount) : 0,
+          date: r.date || r.createdAt || r.paymentDate,
+          method: r.method || r.paymentMethod || 'Bank Transfer',
+          status: r.status || 'Completed'
         }));
 
         const processedLoans = (loansData.data || loansData).map(loan => ({
-          ...loan,
-          amount: typeof loan.amount === 'number' ? loan.amount : 0
+          id: loan._id || loan.id,
+          borrowerId: loan.borrower?._id || loan.borrower || loan.borrowerId,
+          amount: typeof loan.amount === 'number' ? loan.amount : 0,
+          interestRate: loan.interestRate || 0,
+          term: loan.term || 12,
+          purpose: loan.purpose || 'Personal',
+          status: loan.status || 'Pending',
+          createdAt: loan.createdAt || loan.date,
+          dueDate: loan.dueDate
+        }));
+
+        const processedBorrowers = (borrowersData.data || borrowersData).map(borrower => ({
+          id: borrower._id || borrower.id,
+          name: borrower.name || 'Unknown Borrower',
+          email: borrower.email || '',
+          phone: borrower.phone || '',
+          status: borrower.status || 'active'
         }));
 
         setUsers(usersData.data || usersData);
-        setBorrowers(borrowersData.data || borrowersData);
+        setBorrowers(processedBorrowers);
         setLoans(processedLoans);
         setRepayments(processedRepayments);
         setLoading(false);
@@ -181,7 +203,7 @@ const AdminDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Process data when fetched or filters change
+  // Process dashboard data when fetched or filters change
   useEffect(() => {
     if (users.length > 0 || borrowers.length > 0 || loans.length > 0 || repayments.length > 0) {
       processDashboardData();
@@ -190,27 +212,22 @@ const AdminDashboard = () => {
 
   const processDashboardData = () => {
     const filteredLoans = loans.filter(loan => 
-      new Date(loan.createdAt || loan.date) >= startDate && 
-      new Date(loan.createdAt || loan.date) <= endDate
+      new Date(loan.createdAt) >= startDate && 
+      new Date(loan.createdAt) <= endDate
     );
     
     const filteredRepayments = repayments.filter(repayment => 
-      new Date(repayment.createdAt || repayment.date) >= startDate && 
-      new Date(repayment.createdAt || repayment.date) <= endDate
+      new Date(repayment.date) >= startDate && 
+      new Date(repayment.date) <= endDate
     );
 
-    // Calculate totals with proper number validation
-    const totalLoanAmount = loans.reduce((sum, loan) => sum + (loan.amount || 0), 0);
-    const filteredLoanAmount = filteredLoans.reduce((sum, loan) => sum + (loan.amount || 0), 0);
+    // Calculate stats
+    const totalLoanAmount = loans.reduce((sum, loan) => sum + loan.amount, 0);
     const activeLoanAmount = filteredLoans
       .filter(l => l.status === 'Approved')
-      .reduce((sum, loan) => sum + (loan.amount || 0), 0);
-    const defaultedAmount = filteredLoans
-      .filter(l => l.status === 'Defaulted')
-      .reduce((sum, loan) => sum + (loan.amount || 0), 0);
-    const repaymentAmount = filteredRepayments.reduce((sum, r) => sum + (r.amount || 0), 0);
+      .reduce((sum, loan) => sum + loan.amount, 0);
+    const repaymentAmount = filteredRepayments.reduce((sum, r) => sum + r.amount, 0);
 
-    // Calculate stats
     const calculatedStats = [
       { 
         title: "Total Users", 
@@ -255,38 +272,43 @@ const AdminDashboard = () => {
         value: `${((filteredLoans.filter(l => l.status === 'Defaulted').length / filteredLoans.length) * 100 || 0).toFixed(1)}%`, 
         change: "0%", 
         trend: "neutral",
-        icon: <AlertCircle size={24} />,
-        subValue: formatCurrency(defaultedAmount)
+        icon: <AlertCircle size={24} />
       }
     ];
 
-    // Generate recent activities with safe amount handling
+    // Generate recent activities
     const recentActivities = [
       ...filteredRepayments
-        .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
         .slice(0, 3)
-        .map(repayment => ({
-          id: repayment._id,
-          type: "repayment",
-          action: "received",
-          user: borrowers.find(b => b._id === (repayment.borrower?._id || repayment.borrower))?.name || 'Unknown',
-          amount: formatCurrency(repayment.amount || 0),
-          time: new Date(repayment.createdAt || repayment.date).toLocaleTimeString(),
-          date: new Date(repayment.createdAt || repayment.date).toLocaleDateString()
-        })),
+        .map(repayment => {
+          const borrower = borrowers.find(b => b.id === repayment.borrowerId);
+          return {
+            id: repayment.id,
+            type: "repayment",
+            action: "received",
+            user: borrower?.name || 'Unknown',
+            amount: formatCurrency(repayment.amount),
+            time: new Date(repayment.date).toLocaleTimeString(),
+            date: new Date(repayment.date).toLocaleDateString()
+          };
+        }),
       ...filteredLoans
         .filter(l => l.status === 'Approved')
-        .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 2)
-        .map(loan => ({
-          id: loan._id,
-          type: "loan",
-          action: "approved",
-          user: borrowers.find(b => b._id === (loan.borrower?._id || loan.borrower))?.name || 'Unknown',
-          amount: formatCurrency(loan.amount || 0),
-          time: new Date(loan.createdAt || loan.date).toLocaleTimeString(),
-          date: new Date(loan.createdAt || loan.date).toLocaleDateString()
-        }))
+        .map(loan => {
+          const borrower = borrowers.find(b => b.id === loan.borrowerId);
+          return {
+            id: loan.id,
+            type: "loan",
+            action: "approved",
+            user: borrower?.name || 'Unknown',
+            amount: formatCurrency(loan.amount),
+            time: new Date(loan.createdAt).toLocaleTimeString(),
+            date: new Date(loan.createdAt).toLocaleDateString()
+          };
+        })
     ].sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time))
      .slice(0, 5);
 
@@ -294,21 +316,9 @@ const AdminDashboard = () => {
     const pendingLoans = filteredLoans.filter(loan => loan.status === "Pending");
     const overdueLoans = filteredLoans.filter(loan => 
       loan.status === "Approved" && 
-      new Date(loan.dueDate || new Date(new Date(loan.createdAt || loan.date).setMonth(
-        new Date(loan.createdAt || loan.date).getMonth() + (loan.term || 12)
-      )) < new Date()
-    ));
+      new Date(loan.dueDate) < new Date()
+    );
     
-    const borrowersWithManyLoans = borrowers
-      .map(borrower => {
-        const loanCount = filteredLoans.filter(l => 
-          l.borrower?._id === borrower._id || l.borrower === borrower._id
-        ).length;
-        return { ...borrower, loanCount };
-      })
-      .filter(b => b.loanCount >= 3)
-      .sort((a, b) => b.loanCount - a.loanCount);
-
     const generatedAlerts = [
       { 
         id: 1,
@@ -325,15 +335,6 @@ const AdminDashboard = () => {
           : 'No overdue loans',
         data: overdueLoans,
         action: () => navigate('/admin/loans', { state: { filter: 'overdue' } })
-      },
-      {
-        id: 3,
-        severity: borrowersWithManyLoans.length > 0 ? "medium" : "low",
-        message: borrowersWithManyLoans.length > 0
-          ? `${borrowersWithManyLoans.length} borrowers with ≥3 loans`
-          : 'No borrowers with more than 3 loans',
-        data: borrowersWithManyLoans,
-        action: () => navigate('/admin/borrowers')
       }
     ];
 
@@ -368,10 +369,10 @@ const AdminDashboard = () => {
         year: month.getFullYear(),
         amount: filteredRepayments
           .filter(r => {
-            const date = new Date(r.createdAt || r.date);
+            const date = new Date(r.date);
             return date.getMonth() === month.getMonth() && date.getFullYear() === month.getFullYear();
           })
-          .reduce((sum, r) => sum + (r.amount || 0), 0)
+          .reduce((sum, r) => sum + r.amount, 0)
       };
     });
 
@@ -391,14 +392,12 @@ const AdminDashboard = () => {
     const borrowerDistribution = [0, 1, 2, 3, 4, 5].map(count => ({
       count,
       borrowers: borrowers.filter(b => 
-        filteredLoans.filter(l => l.borrower?._id === b._id || l.borrower === b._id).length === count
+        filteredLoans.filter(l => l.borrowerId === b.id).length === count
       ).length
     }));
 
     const borrowerDistributionChartData = {
-      labels: borrowerDistribution.map(d => 
-        d.count === 5 ? '5+' : d.count.toString()
-      ),
+      labels: borrowerDistribution.map(d => d.count === 5 ? '5+' : d.count.toString()),
       datasets: [{
         label: 'Borrowers',
         data: borrowerDistribution.map(d => d.borrowers),
@@ -428,223 +427,8 @@ const AdminDashboard = () => {
     return `${randomChange}%`;
   };
 
-  // Handlers
   const handleViewPendingLoans = (loans) => {
     navigate('/admin/loans', { state: { filter: 'pending' } });
-  };
-
-  const handleViewBorrowers = (borrowers) => {
-    navigate('/admin/borrowers');
-  };
-
-  const toggleAlertExpansion = (alertId) => {
-    setExpandedAlert(expandedAlert === alertId ? null : alertId);
-  };
-
-  const handleGenerateReport = async (type = 'summary') => {
-    try {
-      setReportType(type);
-      
-      // Prepare report data structure
-      const report = {
-        title: type === 'summary' ? 'Loan Portfolio Summary' : 
-              type === 'detailed' ? 'Detailed Loan Report' : 'Credit Risk Analysis',
-        dateRange: `${formatReportDate(startDate)} - ${formatReportDate(endDate)}`,
-        generatedAt: new Date().toISOString(),
-        stats: {
-          totalLoans: loans.length,
-          totalLoanAmount: loans.reduce((sum, loan) => sum + (loan.amount || 0), 0),
-          activeLoans: loans.filter(l => l.status === 'Approved').length,
-          activeLoanAmount: loans.filter(l => l.status === 'Approved')
-                               .reduce((sum, loan) => sum + (loan.amount || 0), 0),
-          defaultedLoans: loans.filter(l => l.status === 'Defaulted').length,
-          defaultedAmount: loans.filter(l => l.status === 'Defaulted')
-                              .reduce((sum, loan) => sum + (loan.amount || 0), 0),
-          repaymentAmount: repayments.reduce((sum, r) => sum + (r.amount || 0), 0)
-        },
-        topBorrowers: borrowers
-          .map(b => ({
-            ...b,
-            loanCount: loans.filter(l => l.borrower?._id === b._id || l.borrower === b._id).length,
-            totalBorrowed: loans.filter(l => l.borrower?._id === b._id || l.borrower === b._id)
-                              .reduce((sum, loan) => sum + (loan.amount || 0), 0),
-            lastRepayment: repayments
-              .filter(r => r.borrower?._id === b._id || r.borrower === b._id)
-              .sort((a, b) => new Date(b.date) - new Date(a.date))[0]
-          }))
-          .sort((a, b) => b.totalBorrowed - a.totalBorrowed)
-          .slice(0, 5),
-        loanStatusDistribution: loans.reduce((acc, loan) => {
-          acc[loan.status] = (acc[loan.status] || 0) + 1;
-          return acc;
-        }, {}),
-        repaymentTrend: Array(12).fill(0).map((_, i) => {
-          const month = new Date();
-          month.setMonth(month.getMonth() - (11 - i));
-          return {
-            month: month.toLocaleString('default', { month: 'short' }),
-            year: month.getFullYear(),
-            amount: repayments
-              .filter(r => {
-                const date = new Date(r.date);
-                return date.getMonth() === month.getMonth() && date.getFullYear() === month.getFullYear();
-              })
-              .reduce((sum, r) => sum + (r.amount || 0), 0)
-          };
-        }),
-        riskAnalysis: type === 'risk' ? {
-          defaultRate: loans.length > 0 ? 
-            (loans.filter(l => l.status === 'Defaulted').length / loans.length) * 100 : 0,
-          overdueLoans: loans.filter(l => 
-            l.status === 'Approved' && 
-            new Date(l.dueDate) < new Date()
-          ).length,
-          highRiskBorrowers: borrowers
-            .map(b => ({
-              ...b,
-              defaultedLoans: loans.filter(l => 
-                (l.borrower?._id === b._id || l.borrower === b._id) && 
-                l.status === 'Defaulted'
-              ).length
-            }))
-            .filter(b => b.defaultedLoans > 0)
-            .sort((a, b) => b.defaultedLoans - a.defaultedLoans)
-        } : null
-      };
-
-      setReportData(report);
-      setShowReportModal(true);
-
-    } catch (error) {
-      console.error('Report generation error:', error);
-      alert('Error preparing report');
-    }
-  };
-
-  const handleProcessLoans = async () => {
-    try {
-      const response = await fetch('http://localhost:5001/api/loans/process', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          action: processingAction,
-          loanIds: selectedLoans.length > 0 ? selectedLoans : undefined
-        })
-      });
-      
-      if (response.ok) {
-        alert(`Loans ${processingAction}d successfully`);
-        setShowLoanProcessing(false);
-        setSelectedLoans([]);
-        window.location.reload();
-      } else {
-        alert('Failed to process loans');
-      }
-    } catch (error) {
-      console.error('Loan processing error:', error);
-      alert('Error processing loans');
-    }
-  };
-
-  const handleRecordPayment = async () => {
-    try {
-      const response = await fetch('http://localhost:5001/api/repayments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...newPayment,
-          amount: parseFloat(newPayment.amount) || 0,
-          date: new Date(newPayment.date).toISOString()
-        })
-      });
-      
-      if (response.ok) {
-        alert('Payment recorded successfully');
-        setShowPaymentModal(false);
-        setNewPayment({
-          borrowerId: '',
-          borrowerName: '',
-          amount: '',
-          date: new Date().toISOString().split('T')[0],
-          loanId: ''
-        });
-        window.location.reload();
-      } else {
-        alert('Failed to record payment');
-      }
-    } catch (error) {
-      console.error('Payment recording error:', error);
-      alert('Error recording payment');
-    }
-  };
-
-  const handleCreateLoan = async () => {
-    try {
-      const response = await fetch('http://localhost:5001/api/loans', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...newLoan,
-          amount: parseFloat(newLoan.amount) || 0,
-          interestRate: parseFloat(newLoan.interestRate) || 8.5,
-          term: parseInt(newLoan.term) || 12
-        })
-      });
-      
-      if (response.ok) {
-        alert('Loan created successfully');
-        setShowNewLoanModal(false);
-        setNewLoan({
-          borrowerId: '',
-          amount: '',
-          interestRate: 8.5,
-          term: 12,
-          purpose: 'Personal',
-          status: 'Pending'
-        });
-        window.location.reload();
-      } else {
-        alert('Failed to create loan');
-      }
-    } catch (error) {
-      console.error('Loan creation error:', error);
-      alert('Error creating loan');
-    }
-  };
-
-  const handleCreateUser = async () => {
-    try {
-      const response = await fetch('http://localhost:5001/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newUser)
-      });
-      
-      if (response.ok) {
-        alert('User created successfully');
-        setShowUserModal(false);
-        setNewUser({
-          name: '',
-          email: '',
-          role: 'user',
-          password: ''
-        });
-        window.location.reload();
-      } else {
-        alert('Failed to create user');
-      }
-    } catch (error) {
-      console.error('User creation error:', error);
-      alert('Error creating user');
-    }
   };
 
   const handleTimeFilterChange = (filter) => {
@@ -669,91 +453,98 @@ const AdminDashboard = () => {
     setEndDate(new Date());
   };
 
-  const handleUserSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const handleBorrowerSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const filteredUsers = useMemo(() => {
-    return users.filter(user => 
-      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    ).filter(user => roleFilter ? user.role === roleFilter : true);
-  }, [users, searchTerm, roleFilter]);
-
-  const filteredBorrowers = useMemo(() => {
-    return borrowers.filter(borrower => 
-      borrower.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      borrower.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    ).filter(borrower => borrowerStatusFilter ? borrower.status === borrowerStatusFilter : true);
-  }, [borrowers, searchTerm, borrowerStatusFilter]);
-
-  // Chart options
-  const pieChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'right',
-        labels: {
-          boxWidth: 12,
-          padding: 16,
-          usePointStyle: true,
-          pointStyle: 'circle',
-        }
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            const label = context.label || '';
-            const value = context.raw || 0;
-            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-            const percentage = Math.round((value / total) * 100);
-            return `${label}: ${value} (${percentage}%)`;
-          }
-        }
-      },
-    },
-  };
-
-  const lineChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            return formatCurrency(context.raw);
-          }
-        }
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        grid: {
-          drawBorder: false,
+  const handleGenerateReport = async (type = 'summary') => {
+    try {
+      setReportType(type);
+      
+      const report = {
+        title: type === 'summary' ? 'Loan Portfolio Summary' : 
+              type === 'detailed' ? 'Detailed Loan Report' : 'Credit Risk Analysis',
+        dateRange: `${formatReportDate(startDate)} - ${formatReportDate(endDate)}`,
+        generatedAt: new Date().toISOString(),
+        stats: {
+          totalLoans: loans.length,
+          totalLoanAmount: loans.reduce((sum, loan) => sum + loan.amount, 0),
+          activeLoans: loans.filter(l => l.status === 'Approved').length,
+          activeLoanAmount: loans.filter(l => l.status === 'Approved')
+                               .reduce((sum, loan) => sum + loan.amount, 0),
+          repaymentAmount: repayments.reduce((sum, r) => sum + r.amount, 0)
         },
-        ticks: {
-          callback: function(value) {
-            return formatCurrency(value);
-          }
-        }
-      },
-      x: {
-        grid: {
-          display: false,
-          drawBorder: false,
-        }
-      }
-    },
+        topBorrowers: borrowers
+          .map(b => ({
+            ...b,
+            loanCount: loans.filter(l => l.borrowerId === b.id).length,
+            totalBorrowed: loans.filter(l => l.borrowerId === b.id)
+                              .reduce((sum, loan) => sum + loan.amount, 0),
+            lastRepayment: repayments
+              .filter(r => r.borrowerId === b.id)
+              .sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+          }))
+          .sort((a, b) => b.totalBorrowed - a.totalBorrowed)
+          .slice(0, 5),
+        loanStatusDistribution: loans.reduce((acc, loan) => {
+          acc[loan.status] = (acc[loan.status] || 0) + 1;
+          return acc;
+        }, {})
+      };
+
+      setReportData(report);
+      setShowReportModal(true);
+    } catch (error) {
+      console.error('Report generation error:', error);
+      alert('Error preparing report');
+    }
   };
+
+  const handleRecordPayment = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/repayments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...newPayment,
+          amount: parseFloat(newPayment.amount),
+          date: new Date(newPayment.date).toISOString()
+        })
+      });
+      
+      if (response.ok) {
+        alert('Payment recorded successfully');
+        setShowPaymentModal(false);
+        setNewPayment({
+          borrowerId: '',
+          borrowerName: '',
+          amount: '',
+          date: new Date().toISOString().split('T')[0],
+          loanId: ''
+        });
+        window.location.reload();
+      } else {
+        alert('Failed to record payment');
+      }
+    } catch (error) {
+      console.error('Payment recording error:', error);
+      alert('Error recording payment');
+    }
+  };
+
+  const StatCard = ({ title, value, change, trend, icon, subValue }) => (
+    <div className="stat-card">
+      <div className="stat-content">
+        <h3>{title}</h3>
+        <div className="stat-value">{value}</div>
+        {subValue && <div className="stat-subvalue">{subValue}</div>}
+        <div className={`stat-change ${trend}`}>
+          {change} <ArrowUpRight size={14} />
+        </div>
+      </div>
+      <div className="stat-icon">
+        {icon}
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -780,22 +571,6 @@ const AdminDashboard = () => {
     );
   }
 
-  const StatCard = ({ title, value, change, trend, icon, subValue }) => (
-    <div className="stat-card">
-      <div className="stat-content">
-        <h3>{title}</h3>
-        <div className="stat-value">{value}</div>
-        {subValue && <div className="stat-subvalue">{subValue}</div>}
-        <div className={`stat-change ${trend}`}>
-          {change} <ArrowUpRight size={14} />
-        </div>
-      </div>
-      <div className="stat-icon">
-        {icon}
-      </div>
-    </div>
-  );
-
   return (
     <div className="dashboard">
       {/* Report Modal */}
@@ -810,10 +585,7 @@ const AdminDashboard = () => {
                 </button>
                 <button 
                   className="download-button"
-                  onClick={() => {
-                    // In a real app, this would download the PDF
-                    alert('Report download would be triggered here');
-                  }}
+                  onClick={() => alert('Report download would be triggered here')}
                 >
                   <Download size={16} /> Download PDF
                 </button>
@@ -850,31 +622,12 @@ const AdminDashboard = () => {
                         <p>{formatCurrency(reportData.stats.activeLoanAmount)}</p>
                       </div>
                       <div className="summary-card">
-                        <h5>Defaulted Loans</h5>
-                        <p>{reportData.stats.defaultedLoans}</p>
-                        <p>{formatCurrency(reportData.stats.defaultedAmount)}</p>
-                      </div>
-                      <div className="summary-card">
                         <h5>Total Repayments</h5>
                         <p>{repayments.length}</p>
                         <p>{formatCurrency(reportData.stats.repaymentAmount)}</p>
                       </div>
                     </div>
                   </div>
-
-                  {reportType === 'detailed' && (
-                    <div className="report-section">
-                      <h4>Loan Status Distribution</h4>
-                      <div className="status-distribution">
-                        {Object.entries(reportData.loanStatusDistribution).map(([status, count]) => (
-                          <div key={status} className="status-item">
-                            <span className="status-label">{status}</span>
-                            <span className="status-value">{count}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   <div className="report-section">
                     <h4>Top Borrowers</h4>
@@ -889,7 +642,7 @@ const AdminDashboard = () => {
                       </thead>
                       <tbody>
                         {reportData.topBorrowers.map(borrower => (
-                          <tr key={borrower._id}>
+                          <tr key={borrower.id}>
                             <td>{borrower.name}</td>
                             <td>{borrower.loanCount}</td>
                             <td>{formatCurrency(borrower.totalBorrowed)}</td>
@@ -903,60 +656,6 @@ const AdminDashboard = () => {
                       </tbody>
                     </table>
                   </div>
-
-                  {reportType === 'risk' && reportData.riskAnalysis && (
-                    <div className="report-section">
-                      <h4>Risk Analysis</h4>
-                      <div className="risk-metrics">
-                        <div className="risk-card">
-                          <h5>Default Rate</h5>
-                          <p>{reportData.riskAnalysis.defaultRate.toFixed(1)}%</p>
-                        </div>
-                        <div className="risk-card">
-                          <h5>Overdue Loans</h5>
-                          <p>{reportData.riskAnalysis.overdueLoans}</p>
-                        </div>
-                        <div className="risk-card">
-                          <h5>High-Risk Borrowers</h5>
-                          <p>{reportData.riskAnalysis.highRiskBorrowers.length}</p>
-                        </div>
-                      </div>
-
-                      {reportData.riskAnalysis.highRiskBorrowers.length > 0 && (
-                        <div className="risk-borrowers">
-                          <h5>High-Risk Borrower Details</h5>
-                          <table className="report-table">
-                            <thead>
-                              <tr>
-                                <th>Name</th>
-                                <th>Defaulted Loans</th>
-                                <th>Total Defaulted</th>
-                                <th>Contact</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {reportData.riskAnalysis.highRiskBorrowers.map(borrower => (
-                                <tr key={borrower._id}>
-                                  <td>{borrower.name}</td>
-                                  <td>{borrower.defaultedLoans}</td>
-                                  <td>
-                                    {formatCurrency(loans
-                                      .filter(l => 
-                                        (l.borrower?._id === borrower._id || l.borrower === borrower._id) && 
-                                        l.status === 'Defaulted'
-                                      )
-                                      .reduce((sum, loan) => sum + (loan.amount || 0), 0)
-                                    )}
-                                  </td>
-                                  <td>{borrower.phone || borrower.email}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   <div className="report-footer">
                     <p>Generated by Loan Management System</p>
@@ -985,7 +684,7 @@ const AdminDashboard = () => {
                 <select
                   value={newPayment.borrowerId}
                   onChange={(e) => {
-                    const selectedBorrower = borrowers.find(b => b._id === e.target.value);
+                    const selectedBorrower = borrowers.find(b => b.id === e.target.value);
                     setNewPayment({
                       ...newPayment,
                       borrowerId: e.target.value,
@@ -995,7 +694,7 @@ const AdminDashboard = () => {
                 >
                   <option value="">Select Borrower</option>
                   {borrowers.map(borrower => (
-                    <option key={borrower._id} value={borrower._id}>
+                    <option key={borrower.id} value={borrower.id}>
                       {borrower.name} ({borrower.email})
                     </option>
                   ))}
@@ -1010,10 +709,10 @@ const AdminDashboard = () => {
                 >
                   <option value="">Select Loan (Optional)</option>
                   {loans
-                    .filter(loan => loan.borrower?._id === newPayment.borrowerId || loan.borrower === newPayment.borrowerId)
+                    .filter(loan => loan.borrowerId === newPayment.borrowerId)
                     .map(loan => (
-                      <option key={loan._id} value={loan._id}>
-                        {formatCurrency(loan.amount)} - {loan.purpose} (Due: {new Date(loan.dueDate).toLocaleDateString()})
+                      <option key={loan.id} value={loan.id}>
+                        {formatCurrency(loan.amount)} - {loan.purpose} (Due: {loan.dueDate ? new Date(loan.dueDate).toLocaleDateString() : 'N/A'})
                       </option>
                     ))}
                 </select>
@@ -1055,240 +754,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Loan Processing Modal */}
-      {showLoanProcessing && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h3>Process Loans</h3>
-              <button onClick={() => setShowLoanProcessing(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Action</label>
-                <select
-                  value={processingAction}
-                  onChange={(e) => setProcessingAction(e.target.value)}
-                >
-                  <option value="approve">Approve</option>
-                  <option value="reject">Reject</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Loans to Process</label>
-                <select
-                  multiple
-                  size="5"
-                  value={selectedLoans}
-                  onChange={(e) => {
-                    const options = [...e.target.options];
-                    const selectedValues = options
-                      .filter(option => option.selected)
-                      .map(option => option.value);
-                    setSelectedLoans(selectedValues);
-                  }}
-                >
-                  {loans
-                    .filter(loan => loan.status === 'Pending')
-                    .map(loan => (
-                      <option key={loan._id} value={loan._id}>
-                        {borrowers.find(b => b._id === (loan.borrower?._id || loan.borrower))?.name || 'Unknown'} - {formatCurrency(loan.amount)}
-                      </option>
-                    ))}
-                </select>
-                <small>Hold Ctrl/Cmd to select multiple</small>
-              </div>
-              <p>
-                {selectedLoans.length > 0 
-                  ? `Processing ${selectedLoans.length} selected loans`
-                  : 'This will process all pending loans with the selected action.'}
-              </p>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="cancel-button"
-                onClick={() => setShowLoanProcessing(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="submit-button"
-                onClick={handleProcessLoans}
-              >
-                Process Loans
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* New Loan Modal */}
-      {showNewLoanModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h3>Create New Loan</h3>
-              <button onClick={() => setShowNewLoanModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Borrower</label>
-                <select
-                  value={newLoan.borrowerId}
-                  onChange={(e) => setNewLoan({...newLoan, borrowerId: e.target.value})}
-                >
-                  <option value="">Select Borrower</option>
-                  {borrowers.map(borrower => (
-                    <option key={borrower._id} value={borrower._id}>
-                      {borrower.name} ({borrower.email})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Amount (M)</label>
-                <input 
-                  type="number" 
-                  value={newLoan.amount}
-                  onChange={(e) => setNewLoan({...newLoan, amount: e.target.value})}
-                  placeholder="Enter loan amount"
-                />
-              </div>
-              <div className="form-group">
-                <label>Interest Rate (%)</label>
-                <input 
-                  type="number" 
-                  step="0.1"
-                  value={newLoan.interestRate}
-                  onChange={(e) => setNewLoan({...newLoan, interestRate: e.target.value})}
-                  placeholder="Enter interest rate"
-                />
-              </div>
-              <div className="form-group">
-                <label>Term (months)</label>
-                <input 
-                  type="number" 
-                  value={newLoan.term}
-                  onChange={(e) => setNewLoan({...newLoan, term: e.target.value})}
-                  placeholder="Enter loan term"
-                />
-              </div>
-              <div className="form-group">
-                <label>Purpose</label>
-                <select
-                  value={newLoan.purpose}
-                  onChange={(e) => setNewLoan({...newLoan, purpose: e.target.value})}
-                >
-                  <option value="Personal">Personal</option>
-                  <option value="Business">Business</option>
-                  <option value="Education">Education</option>
-                  <option value="Home">Home</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Status</label>
-                <select
-                  value={newLoan.status}
-                  onChange={(e) => setNewLoan({...newLoan, status: e.target.value})}
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Approved">Approved</option>
-                </select>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="cancel-button"
-                onClick={() => setShowNewLoanModal(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="submit-button"
-                onClick={handleCreateLoan}
-                disabled={!newLoan.borrowerId || !newLoan.amount}
-              >
-                Create Loan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* New User Modal */}
-      {showUserModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h3>Create New User</h3>
-              <button onClick={() => setShowUserModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Name</label>
-                <input 
-                  type="text" 
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                  placeholder="Enter full name"
-                />
-              </div>
-              <div className="form-group">
-                <label>Email</label>
-                <input 
-                  type="email" 
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div className="form-group">
-                <label>Role</label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                  <option value="borrower">Borrower</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Password</label>
-                <input 
-                  type="password" 
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                  placeholder="Enter password"
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button 
-                className="cancel-button"
-                onClick={() => setShowUserModal(false)}
-              >
-                Cancel
-              </button>
-              <button 
-                className="submit-button"
-                onClick={handleCreateUser}
-                disabled={!newUser.name || !newUser.email || !newUser.password}
-              >
-                Create User
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Dashboard Header */}
       <div className="dashboard-header">
         <div className="header-content">
           <h2>Loan Management Dashboard</h2>
@@ -1411,7 +877,32 @@ const AdminDashboard = () => {
                   {loanStatusData ? (
                     <Pie 
                       data={loanStatusData} 
-                      options={pieChartOptions}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            position: 'right',
+                            labels: {
+                              boxWidth: 12,
+                              padding: 16,
+                              usePointStyle: true,
+                              pointStyle: 'circle',
+                            }
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                              }
+                            }
+                          },
+                        },
+                      }}
                       height={300}
                     />
                   ) : (
@@ -1433,7 +924,41 @@ const AdminDashboard = () => {
                   {repaymentTrendData ? (
                     <Line 
                       data={repaymentTrendData} 
-                      options={lineChartOptions}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: false
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: function(context) {
+                                return formatCurrency(context.raw);
+                              }
+                            }
+                          },
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            grid: {
+                              drawBorder: false,
+                            },
+                            ticks: {
+                              callback: function(value) {
+                                return formatCurrency(value);
+                              }
+                            }
+                          },
+                          x: {
+                            grid: {
+                              display: false,
+                              drawBorder: false,
+                            }
+                          }
+                        },
+                      }}
                       height={300}
                     />
                   ) : (
@@ -1573,259 +1098,6 @@ const AdminDashboard = () => {
         </>
       )}
 
-      {/* Users Tab */}
-      {activeTab === 'users' && (
-        <div className="data-table-container">
-          <div className="table-header">
-            <h3>Users</h3>
-            <button 
-              className="add-button"
-              onClick={() => setShowUserModal(true)}
-            >
-              <Plus size={16} />
-              <span>Add User</span>
-            </button>
-          </div>
-          <div className="table-filters">
-            <div className="search-box">
-              <Search size={16} />
-              <input 
-                type="text" 
-                placeholder="Search users..." 
-                onChange={handleUserSearch}
-              />
-            </div>
-            <div className="filter-dropdown">
-              <Filter size={16} />
-              <select onChange={(e) => setRoleFilter(e.target.value)}>
-                <option value="">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="user">User</option>
-                <option value="borrower">Borrower</option>
-              </select>
-            </div>
-          </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Joined</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map(user => (
-                <tr key={user._id}>
-                  <td>
-                    <div className="user-info">
-                      <UserCircle size={20} />
-                      <span>{user.name}</span>
-                    </div>
-                  </td>
-                  <td>{user.email}</td>
-                  <td>
-                    <span className={`role-badge ${user.role}`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td>{new Date(user.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <span className={`status-badge ${user.status || 'active'}`}>
-                      {user.status || 'active'}
-                    </span>
-                  </td>
-                  <td>
-                    <button 
-                      className="action-button"
-                      onClick={() => navigate(`/admin/users/${user._id}`)}
-                    >
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Borrowers Tab */}
-      {activeTab === 'borrowers' && (
-        <div className="data-table-container">
-          <div className="table-header">
-            <h3>Borrowers</h3>
-            <button 
-              className="add-button"
-              onClick={() => navigate('/admin/borrowers/new')}
-            >
-              <Plus size={16} />
-              <span>Add Borrower</span>
-            </button>
-          </div>
-          <div className="table-filters">
-            <div className="search-box">
-              <Search size={16} />
-              <input 
-                type="text" 
-                placeholder="Search borrowers..." 
-                onChange={handleBorrowerSearch}
-              />
-            </div>
-            <div className="filter-dropdown">
-              <Filter size={16} />
-              <select onChange={(e) => setBorrowerStatusFilter(e.target.value)}>
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Loans</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredBorrowers.map(borrower => (
-                <tr key={borrower._id}>
-                  <td>
-                    <div className="user-info">
-                      <UserCircle size={20} />
-                      <span>{borrower.name}</span>
-                    </div>
-                  </td>
-                  <td>{borrower.email}</td>
-                  <td>{borrower.phone || 'N/A'}</td>
-                  <td>
-                    {loans.filter(l => l.borrower?._id === borrower._id || l.borrower === borrower._id).length}
-                  </td>
-                  <td>
-                    <span className={`status-badge ${borrower.status || 'active'}`}>
-                      {borrower.status || 'active'}
-                    </span>
-                  </td>
-                  <td>
-                    <button 
-                      className="action-button"
-                      onClick={() => navigate(`/admin/borrowers/${borrower._id}`)}
-                    >
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Loans Tab */}
-      {activeTab === 'loans' && (
-        <div className="data-table-container">
-          <div className="table-header">
-            <h3>Loans</h3>
-            <div className="header-actions">
-              <button 
-                className="add-button"
-                onClick={() => setShowNewLoanModal(true)}
-              >
-                <Plus size={16} />
-                <span>New Loan</span>
-              </button>
-              <button 
-                className="process-button"
-                onClick={() => setShowLoanProcessing(true)}
-              >
-                Process Loans
-              </button>
-            </div>
-          </div>
-          <div className="table-filters">
-            <div className="search-box">
-              <Search size={16} />
-              <input 
-                type="text" 
-                placeholder="Search loans..." 
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="filter-dropdown">
-              <Filter size={16} />
-              <select>
-                <option>All Status</option>
-                <option>Pending</option>
-                <option>Approved</option>
-                <option>Rejected</option>
-                <option>Defaulted</option>
-              </select>
-            </div>
-          </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Borrower</th>
-                <th>Amount</th>
-                <th>Interest</th>
-                <th>Term</th>
-                <th>Purpose</th>
-                <th>Status</th>
-                <th>Due Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loans
-                .filter(loan => 
-                  (borrowers.find(b => b._id === (loan.borrower?._id || loan.borrower))?.name || '')
-                    .toLowerCase()
-                    .includes(searchTerm.toLowerCase()) ||
-                  loan.purpose.toLowerCase().includes(searchTerm.toLowerCase())
-                )
-                .map(loan => (
-                  <tr key={loan._id}>
-                    <td>
-                      {borrowers.find(b => b._id === (loan.borrower?._id || loan.borrower))?.name || 'Unknown'}
-                    </td>
-                    <td>{formatCurrency(loan.amount)}</td>
-                    <td>{loan.interestRate}%</td>
-                    <td>{loan.term} months</td>
-                    <td>{loan.purpose}</td>
-                    <td>
-                      <span className={`status-badge ${loan.status.toLowerCase()}`}>
-                        {loan.status}
-                      </span>
-                    </td>
-                    <td>
-                      {loan.dueDate 
-                        ? new Date(loan.dueDate).toLocaleDateString() 
-                        : new Date(new Date(loan.createdAt).setMonth(
-                            new Date(loan.createdAt).getMonth() + (loan.term || 12)
-                          )).toLocaleDateString()}
-                    </td>
-                    <td>
-                      <button 
-                        className="action-button"
-                        onClick={() => navigate(`/admin/loans/${loan._id}`)}
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
       {/* Repayments Tab */}
       {activeTab === 'repayments' && (
         <div className="data-table-container">
@@ -1873,36 +1145,43 @@ const AdminDashboard = () => {
             <tbody>
               {repayments
                 .filter(repayment => {
-                  const amount = typeof repayment.amount === 'number' ? repayment.amount : 0;
+                  const borrower = borrowers.find(b => b.id === repayment.borrowerId);
+                  const loan = loans.find(l => l.id === repayment.loanId);
+                  const searchTermLower = searchTerm.toLowerCase();
+                  
                   return (
-                    (borrowers.find(b => b._id === (repayment.borrower?._id || repayment.borrower))?.name || '')
-                      .toLowerCase()
-                      .includes(searchTerm.toLowerCase()) ||
-                    amount.toString().includes(searchTerm)
+                    (borrower?.name?.toLowerCase().includes(searchTermLower)) ||
+                    (loan?.purpose?.toLowerCase().includes(searchTermLower)) ||
+                    repayment.amount.toString().includes(searchTerm) ||
+                    repayment.method.toLowerCase().includes(searchTermLower)
                   );
                 })
                 .map(repayment => {
-                  const amount = typeof repayment.amount === 'number' ? repayment.amount : 0;
+                  const borrower = borrowers.find(b => b.id === repayment.borrowerId);
+                  const loan = loans.find(l => l.id === repayment.loanId);
+                  
                   return (
-                    <tr key={repayment._id}>
+                    <tr key={repayment.id}>
                       <td>
-                        {borrowers.find(b => b._id === (repayment.borrower?._id || repayment.borrower))?.name || 'Unknown'}
+                        {borrower?.name || 'Unknown Borrower'}
                       </td>
                       <td>
-                        {loans.find(l => l._id === repayment.loan)?.purpose || 'N/A'}
+                        {loan?.purpose || 'General Repayment'}
                       </td>
-                      <td>{formatCurrency(amount)}</td>
-                      <td>{new Date(repayment.createdAt || repayment.date).toLocaleDateString()}</td>
-                      <td>{repayment.method || 'Bank Transfer'}</td>
+                      <td>{formatCurrency(repayment.amount)}</td>
                       <td>
-                        <span className="status-badge completed">
-                          Completed
+                        {new Date(repayment.date).toLocaleDateString()}
+                      </td>
+                      <td>{repayment.method}</td>
+                      <td>
+                        <span className={`status-badge ${repayment.status.toLowerCase()}`}>
+                          {repayment.status}
                         </span>
                       </td>
                       <td>
                         <button 
                           className="action-button"
-                          onClick={() => navigate(`/admin/repayments/${repayment._id}`)}
+                          onClick={() => navigate(`/admin/repayments/${repayment.id}`)}
                         >
                           View
                         </button>

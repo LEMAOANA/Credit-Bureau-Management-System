@@ -30,6 +30,16 @@ const formatCurrency = (amount) => {
   })}`;
 };
 
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+};
+
 const CreditReports = () => {
   const [borrowers, setBorrowers] = useState([]);
   const [selectedBorrower, setSelectedBorrower] = useState('');
@@ -88,7 +98,8 @@ const CreditReports = () => {
         
         setCreditReport({
           ...res.data.data,
-          loanDetails: normalizedLoans
+          loanDetails: normalizedLoans,
+          repaymentHistory: res.data.data.repaymentHistory || []
         });
         prepareChartData(normalizedLoans);
         
@@ -130,50 +141,42 @@ const CreditReports = () => {
       // Header
       doc.setFontSize(18);
       doc.setTextColor(30, 41, 59);
-      doc.text(`Credit Report for ${creditReport.borrowerInfo.name}`, 105, 20, { align: 'center' });
-
-      // Borrower Info
+      doc.text('CREDIT REPORT', 105, 15, { align: 'center' });
       doc.setFontSize(12);
-      doc.text(`Email: ${creditReport.borrowerInfo.email}`, 20, 30);
-      doc.text(`Credit Score: ${creditReport.creditScore} (${getCreditScoreInfo(creditReport.creditScore).category})`, 20, 40);
+      doc.text(`Prepared for ${creditReport.borrowerInfo.name}`, 105, 20, { align: 'center' });
+      doc.text(`Generated on ${new Date().toLocaleDateString()}`, 105, 25, { align: 'center' });
 
-      // Summary
+      // Borrower Information
       doc.setFontSize(14);
-      doc.text('Summary:', 20, 50);
+      doc.text('Borrower Information', 20, 35);
       doc.setFontSize(12);
+      doc.text(`Name: ${creditReport.borrowerInfo.name}`, 20, 40);
+      doc.text(`Email: ${creditReport.borrowerInfo.email}`, 20, 45);
+      doc.text(`Phone: ${creditReport.borrowerInfo.phone || 'N/A'}`, 20, 50);
+      doc.text(`Borrower ID: ${creditReport.borrowerInfo.borrowerId || 'N/A'}`, 20, 55);
+      doc.text(`Report Date: ${new Date().toLocaleDateString()}`, 20, 60);
+
+      // Credit Summary
+      doc.setFontSize(14);
+      doc.text('Credit Summary', 20, 70);
       
       const totalLoans = creditReport.loanDetails.length;
-      const activeLoans = creditReport.loanDetails.filter(l => l.status === 'active').length;
       const totalBorrowed = creditReport.loanDetails.reduce((sum, loan) => sum + (Number(loan.loanAmount) || 0), 0);
       const totalRepayment = creditReport.loanDetails.reduce((sum, loan) => sum + (Number(loan.totalRepaymentAmount) || 0), 0);
+      const totalOutstanding = totalBorrowed - totalRepayment;
 
-      doc.text(`• Total Loans: ${totalLoans}`, 20, 60);
-      doc.text(`• Active Loans: ${activeLoans}`, 20, 65);
-      doc.text(`• Total Borrowed: ${formatCurrency(totalBorrowed)}`, 20, 70);
-      doc.text(`• Total Repayment: ${formatCurrency(totalRepayment)}`, 20, 75);
-
-      // Table Data
-      const tableData = filteredReport.map(loan => {
-        const amount = Number(loan.loanAmount) || 0;
-        const repayment = Number(loan.totalRepaymentAmount) || 0;
-        const remaining = amount - repayment;
-
-        return [
-          loan.loanId || 'N/A',
-          loan.purpose || 'N/A',
-          loan.status || 'Unknown',
-          formatCurrency(amount),
-          formatCurrency(repayment),
-          loan.interestRate != null ? `${loan.interestRate}%` : 'N/A',
-          remaining >= 0 ? formatCurrency(remaining) : 'Paid'
-        ];
-      });
-
-      // Create table using autoTable plugin
+      // Summary table
       autoTable(doc, {
-        startY: 85,
-        head: [['Loan ID', 'Purpose', 'Status', 'Amount (M)', 'Repayment (M)', 'Interest Rate', 'Remaining (M)']],
-        body: tableData,
+        startY: 75,
+        head: [['Metric', 'Value']],
+        body: [
+          ['Credit Score:', creditReport.creditScore || 'N/A'],
+          ['Total Loans:', totalLoans],
+          ['Total Borrowed:', formatCurrency(totalBorrowed)],
+          ['Total Repaid:', formatCurrency(totalRepayment)],
+          ['Total Outstanding:', totalOutstanding > 0 ? formatCurrency(totalOutstanding) : 'N/A'],
+          ['Last Activity:', 'N/A']
+        ],
         headStyles: {
           fillColor: [30, 41, 59],
           textColor: 255,
@@ -181,25 +184,112 @@ const CreditReports = () => {
           halign: 'center'
         },
         columnStyles: {
-          3: { halign: 'right' },
-          4: { halign: 'right' },
+          0: { fontStyle: 'bold' },
+          1: { halign: 'right' }
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 5
+        },
+        margin: { top: 75 }
+      });
+
+      // Loan Details
+      doc.setFontSize(14);
+      doc.text('Loan Details', 20, doc.lastAutoTable.finalY + 10);
+
+      const loanDetailsData = creditReport.loanDetails.map(loan => [
+        loan.loanId || 'N/A',
+        formatCurrency(loan.loanAmount || 0),
+        loan.interestRate != null ? `${loan.interestRate}%` : 'N/A',
+        loan.purpose || 'N/A',
+        loan.status || 'Unknown',
+        loan.status || 'Not Started',
+        formatCurrency(loan.totalRepaymentAmount || 0)
+      ]);
+
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 15,
+        head: [['Loan ID', 'Amount', 'Rate', 'Purpose', 'Status', 'Progress', 'Total Repayment']],
+        body: loanDetailsData,
+        headStyles: {
+          fillColor: [30, 41, 59],
+          textColor: 255,
+          fontSize: 10,
+          halign: 'center'
+        },
+        columnStyles: {
+          1: { halign: 'right' },
           6: { halign: 'right' }
         },
         styles: {
           fontSize: 9,
           cellPadding: 3,
           overflow: 'linebreak'
+        }
+      });
+
+      // Repayment History
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text('Repayment History', 20, 20);
+
+      const repaymentData = creditReport.repaymentHistory.map(payment => [
+        formatDate(payment.date),
+        formatCurrency(payment.amount || 0),
+        payment.method || 'N/A',
+        payment.notes || 'N/A'
+      ]);
+
+      autoTable(doc, {
+        startY: 25,
+        head: [['Date', 'Amount', 'Method', 'Notes']],
+        body: repaymentData,
+        headStyles: {
+          fillColor: [30, 41, 59],
+          textColor: 255,
+          fontSize: 10,
+          halign: 'center'
         },
-        margin: { top: 85 }
+        columnStyles: {
+          1: { halign: 'right' }
+        },
+        styles: {
+          fontSize: 9,
+          cellPadding: 3
+        }
+      });
+
+      // Credit Analysis
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text('Credit Analysis', 20, 20);
+      doc.setFontSize(12);
+      
+      const analysisText = [
+        'This credit report provides a comprehensive overview of the borrower\'s financial activity with our institution. Key observations:',
+        '',
+        `- The borrower currently has ${totalOutstanding > 0 ? 'an outstanding balance' : 'no outstanding balance'}`,
+        `- Their credit score of ${creditReport.creditScore || 'N/A'} is ${getCreditScoreInfo(creditReport.creditScore).category.toLowerCase()}`,
+        `- ${creditReport.repaymentHistory?.length || 0} recorded payments have been made`,
+        '',
+        'This concludes the summary of the borrower\'s financial activities.'
+      ];
+      
+      let yPosition = 30;
+      analysisText.forEach((line) => {
+        doc.text(line, 20, yPosition);
+        yPosition += 5;
       });
 
       // Footer
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text(
-        `Generated on ${new Date().toLocaleString()}`,
-        14,
-        doc.internal.pageSize.height - 10
+        `Confidential - Generated on ${new Date().toLocaleString()}`,
+        105,
+        doc.internal.pageSize.height - 10,
+        { align: 'center' }
       );
 
       doc.save(`credit-report-${creditReport.borrowerInfo.borrowerId}-${new Date().toISOString().slice(0,10)}.pdf`);
