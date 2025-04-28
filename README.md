@@ -43,7 +43,7 @@ Step 3: Create a .env File
         └── backend/.env
 
 Step 4: Add the Following Credentials to .env
-        YOUR MONGODB_URL (e.g MONGODB_URI=mongodb+srv://Student:s12345@nucleusdb.zdvm9.mongodb.net/credit-bureau?retryWrites=true&w=majority&appName=Nucleusdb)
+        YOUR MONGODB_URL 
         PORT=5001
         JWT_SECRET=9cbd6299cb0075630bfc68946b8f6c97a941dcd3f39ffb9f63e9a5cac2f0b56b2b1f1063f7bb49366928186bf9c8c3d4f89c5de8e89e79dc4c456ac492f203d2
         JWT_EXPIRES_IN=90d
