@@ -33,6 +33,7 @@
     "react-toastify": "^11.0.5",
     "react-window": "^1.8.11",
     "recharts": "^2.15.3",
+    "serve": "^14.2.4",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
