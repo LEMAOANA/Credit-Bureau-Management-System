@@ -41,7 +41,7 @@ app.use(cors({
 app.use(express.json()); // For parsing application/json
 
 // Serve static files from the frontend build folder
-app.use(express.static(path.join(__dirname, 'frontend', 'public')));
+app.use(express.static(path.join(__dirname, 'frontend', 'build')));
 
 // Log environment variables (for debugging, remove in production)
 console.log('Environment Variables:', {
@@ -103,4 +103,10 @@ process.on('SIGINT', () => {
     console.log('MongoDB connection closed due to app termination');
     process.exit(0);
   });
+});
+
+
+// Serve index.html for all other routes that don't match a static file
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'build', 'index.html'));
 });
