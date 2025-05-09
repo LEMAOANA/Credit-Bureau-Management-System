@@ -87,3 +87,18 @@ exports.deleteRepayment = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+
+exports.getRepaymentsByBorrower = async (req, res) => {
+    const borrowerId = req.params.borrowerId;
+
+    try {
+        const repayments = await Repayment.find({ borrower: borrowerId })
+            .populate('borrower')
+            .populate('loan');
+
+        res.json({ success: true, data: repayments });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Error fetching repayments: ' + err.message });
+    }
+};

@@ -118,3 +118,15 @@ exports.getRepaymentDetails = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+
+// Get all loans for a specific borrower
+exports.getLoansByBorrowerId = async (req, res) => {
+  try {
+    const { borrowerId } = req.params;
+    const loans = await Loan.find({ borrower: borrowerId }).populate('borrower');
+    res.json(loans);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};

@@ -1,0 +1,60 @@
+.borrower-registration-container {
+  background-color: var(--bg-card);
+  padding: 3rem 2.5rem;
+  border-radius: var(--radius);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  max-width: 420px;
+  margin: 60px auto;
+  text-align: center;
+  color: var(--text-light);
+}
+
+.borrower-registration-container h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.borrower-registration-container input {
+  display: block;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1.2rem;
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius);
+  color: var(--text-light);
+  font-size: 1rem;
+  transition: border var(--transition), background var(--transition);
+}
+
+.borrower-registration-container input:focus {
+  border-color: var(--input-focus);
+  background-color: #1e40af10;
+  outline: none;
+}
+
+.borrower-registration-container button {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.borrower-registration-container button:hover {
+  background-color: var(--accent-hover);
+}
+
+.borrower-registration-container .error {
+  color: #f87171;
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+}

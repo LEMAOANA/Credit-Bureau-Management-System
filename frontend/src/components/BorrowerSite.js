@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPhone, FaWhatsapp, FaInfoCircle, FaTimes, FaCheckCircle, FaMoneyBillWave, FaClock, FaThumbsUp } from 'react-icons/fa';
-import { MdEmail, MdLock, MdOutlineAccountBalance, MdPayment } from 'react-icons/md';
-import { IoIosPeople } from 'react-icons/io';
+import { FaPhone, FaWhatsapp, FaInfoCircle, FaMoneyBillWave, FaClock, FaThumbsUp } from 'react-icons/fa';
+import { MdEmail, MdLock } from 'react-icons/md';
 import './BorrowerSite.css';
 
 const HeroSection = ({ handleLearnMoreClick }) => (
@@ -140,163 +139,7 @@ const TopContactStrip = () => (
   </div>
 );
 
-const LoanApplicationForm = ({ onClose }) => {
-  const [formData, setFormData] = useState({
-    fullName: '',
-    idNumber: '',
-    phone: '',
-    email: '',
-    loanAmount: '',
-    repaymentPeriod: '6',
-    purpose: ''
-  });
-  const [submissionStatus, setSubmissionStatus] = useState(null);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSubmissionStatus('submitting');
-    // Simulate API call
-    setTimeout(() => {
-      setSubmissionStatus('success');
-    }, 1500);
-  };
-
-  if (submissionStatus === 'success') {
-    return (
-      <div className="modal-overlay">
-        <div className="modal-content">
-          <button className="close-button" onClick={onClose}>
-            <FaTimes />
-          </button>
-          <div className="success-message">
-            <FaCheckCircle className="success-icon" />
-            <h4>Application Submitted Successfully!</h4>
-            <p>Your loan application has been received.</p>
-            <p>We'll review your information and contact you shortly.</p>
-            <div className="application-summary">
-              <h5>Application Summary</h5>
-              <p><span>Name:</span> <strong>{formData.fullName}</strong></p>
-              <p><span>Loan Amount:</span> <strong>M{formData.loanAmount}</strong></p>
-              <p><span>Repayment Period:</span> <strong>{formData.repaymentPeriod} months</strong></p>
-            </div>
-            <button onClick={onClose} className="btn-highlight">Close</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <button className="close-button" onClick={onClose}>
-          <FaTimes />
-        </button>
-        <h2>Apply for a Loan</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Full Name</label>
-            <input 
-              type="text" 
-              name="fullName" 
-              value={formData.fullName} 
-              onChange={handleChange} 
-              required 
-              placeholder="Enter your full name"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>ID Number</label>
-            <input 
-              type="text" 
-              name="idNumber" 
-              value={formData.idNumber} 
-              onChange={handleChange} 
-              required 
-              placeholder="Enter your ID number"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Phone Number</label>
-            <input 
-              type="tel" 
-              name="phone" 
-              value={formData.phone} 
-              onChange={handleChange} 
-              required 
-              placeholder="Enter your phone number"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Email</label>
-            <input 
-              type="email" 
-              name="email" 
-              value={formData.email} 
-              onChange={handleChange} 
-              required 
-              placeholder="Enter your email address"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Loan Amount (M)</label>
-            <input 
-              type="number" 
-              name="loanAmount" 
-              value={formData.loanAmount} 
-              onChange={handleChange} 
-              min="1000" 
-              max="150000" 
-              required 
-              placeholder="Enter desired loan amount"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Repayment Period (months)</label>
-            <select 
-              name="repaymentPeriod" 
-              value={formData.repaymentPeriod} 
-              onChange={handleChange}
-            >
-              <option value="1">1 month</option>
-              <option value="3">3 months</option>
-              <option value="6">6 months</option>
-              <option value="12">12 months</option>
-              <option value="24">24 months</option>
-            </select>
-          </div>
-          
-          <div className="form-group">
-            <label>Loan Purpose</label>
-            <textarea 
-              name="purpose" 
-              value={formData.purpose} 
-              onChange={handleChange} 
-              required 
-              placeholder="Briefly describe the purpose of your loan"
-            />
-          </div>
-          
-          <button type="submit" className="btn-highlight">
-            {submissionStatus === 'submitting' ? 'Submitting...' : 'Submit Application'}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-const Navbar = ({ activeLink, handleLoanFormToggle, handleLanderClick }) => (
+const Navbar = ({ activeLink, handleLoanRedirect, handleLanderClick }) => (
   <nav className="navbar">
     <div className="header-left">
       <img 
@@ -314,8 +157,8 @@ const Navbar = ({ activeLink, handleLoanFormToggle, handleLanderClick }) => (
       <li><a href="/faqs" className={activeLink === 'faqs' ? 'active' : ''}>FAQs</a></li>
       <li><a href="/loan-guide" className={activeLink === 'guide' ? 'active' : ''}>Loan Guide</a></li>
       <li><a href="/contact" className={activeLink === 'contact' ? 'active' : ''}>Contact Us</a></li>
-      <li><button onClick={handleLoanFormToggle} className="btn-highlight">
-        Apply for Loan Now
+      <li><button onClick={handleLoanRedirect} className="btn-highlight">
+      <MdLock /> Borrower Login
       </button></li>
       <li>
         <button onClick={handleLanderClick} className="btn-highlight">
@@ -327,11 +170,10 @@ const Navbar = ({ activeLink, handleLoanFormToggle, handleLanderClick }) => (
 );
 
 const BorrowerSite = () => {
-  const [showLoanForm, setShowLoanForm] = useState(false);
   const navigate = useNavigate();
 
   const handleLearnMoreClick = () => navigate('/loan-guide');
-  const handleLoanFormToggle = () => setShowLoanForm(!showLoanForm);
+  const handleLoanRedirect = () => navigate('/signin');
   const handleLanderClick = () => navigate('/login');
 
   return (
@@ -339,8 +181,8 @@ const BorrowerSite = () => {
       <TopContactStrip />
       <Navbar 
         activeLink="home" 
-        handleLoanFormToggle={handleLoanFormToggle} 
-        handleLanderClick={handleLanderClick} 
+        handleLoanRedirect={handleLoanRedirect}
+        handleLanderClick={handleLanderClick}
       />
       <HeroSection handleLearnMoreClick={handleLearnMoreClick} />
       <InfoBanner handleLearnMoreClick={handleLearnMoreClick} />
@@ -348,10 +190,6 @@ const BorrowerSite = () => {
       <TestimonialsSection />
       <FAQPreview navigate={navigate} />
       <Footer />
-      
-      {showLoanForm && (
-        <LoanApplicationForm onClose={() => setShowLoanForm(false)} />
-      )}
     </div>
   );
 };

@@ -1,10 +1,27 @@
 const Borrower = require('../models/Borrower'); // Import Borrower model
 const Loan = require('../models/Loan'); // Import Loan model
 
-// Create a new borrower
+// Create a new borrower with National ID validation
 exports.createBorrower = async (req, res) => {
   try {
     const { name, email, phone, loanAmount, loanPurpose, nationalId } = req.body;
+
+    // National ID validation: must be at least 10 digits
+    if (!/^\d{10,}$/.test(nationalId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'National ID must be at least 10 digits'
+      });
+    }
+
+    // Check if borrower already exists with the same nationalId
+    const existingBorrower = await Borrower.findOne({ nationalId });
+    if (existingBorrower) {
+      return res.status(400).json({
+        success: false,
+        message: 'Borrower with this National ID already exists'
+      });
+    }
 
     const newBorrower = new Borrower({
       name,
@@ -29,9 +46,31 @@ exports.createBorrower = async (req, res) => {
   }
 };
 
-// Get all borrowers
+
+// Get all borrowers with optional nationalId query
 exports.getAllBorrowers = async (req, res) => {
   try {
+    const { nationalId } = req.query;
+
+    // If nationalId is provided, search for borrowers with this ID
+    if (nationalId) {
+      // National ID validation
+      if (!/^\d{10,}$/.test(nationalId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid National ID format. Must be at least 10 digits.'
+        });
+      }
+
+      const borrowers = await Borrower.find({ nationalId });
+      return res.status(200).json({
+        success: true,
+        count: borrowers.length,
+        data: borrowers
+      });
+    }
+
+    // Get all borrowers if no nationalId is provided
     const borrowers = await Borrower.find();
     res.status(200).json({
       success: true,

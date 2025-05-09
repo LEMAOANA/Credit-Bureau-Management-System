@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'; // Added Navigate here
+import React from 'react'; 
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 import Admin from './components/Admin';
@@ -12,6 +12,12 @@ import Loans from './components/Loans';
 import BorrowerSite from './components/BorrowerSite';
 import Repayments from './components/Repayments';
 import CreditReports from './components/CreditReports';
+
+// 🆕 Borrower Loan Journey Pages
+import BorrowerValidation from './components/BorrowerValidation';
+import BorrowerRegistration from './components/BorrowerRegistration';
+import LoanApplication from './components/LoanApplication';
+
 import './App.css';
 
 const App = () => {
@@ -23,6 +29,12 @@ const App = () => {
           <Route path="/" element={<BorrowerSite />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+
+          {/* 🆕 Borrower Loan Journey Routes */}
+          <Route path="/signin" element={<BorrowerValidation />} />
+          <Route path="/register" element={<BorrowerRegistration />} />
+          {/* Dynamic route to load loan application by borrowerId */}
+          <Route path="/loan-application/:borrowerId" element={<LoanApplication />} />
 
           {/* Protected Admin Routes */}
           <Route path="/Admin" element={<PrivateRoute />}>

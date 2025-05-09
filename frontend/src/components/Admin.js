@@ -30,9 +30,6 @@ const AdminHome = () => {
       try {
         // Replace with actual API call
         const mockNotifications = [
-          { id: 1, message: 'New loan application received', time: '2 hours ago', unread: true },
-          { id: 2, message: 'Payment received from John Doe', time: '1 day ago', unread: true },
-          { id: 3, message: 'System maintenance scheduled', time: '3 days ago', unread: false },
         ];
         setNotifications(mockNotifications);
         setUnreadNotifications(mockNotifications.filter(n => n.unread).length);

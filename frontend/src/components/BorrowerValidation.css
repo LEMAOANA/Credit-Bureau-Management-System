@@ -1,0 +1,121 @@
+:root {
+  --bg-dark: #1f2937;
+  --bg-card: #111827;
+  --text-light: #f3f4f6;
+  --text-muted: #9ca3af;
+  --input-bg: #1e293b;
+  --input-border: #374151;
+  --input-focus: #3b82f6;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --radius: 0.75rem;
+  --transition: 0.3s ease;
+}
+
+body {
+  background-color: var(--bg-dark);
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-light);
+}
+
+.borrower-validation-container {
+  background-color: var(--bg-card);
+  max-width: 480px;
+  margin: 4rem auto;
+  padding: 2.5rem;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: all var(--transition);
+}
+
+.borrower-validation-container h2 {
+  margin-bottom: 1.5rem;
+  color: var(--accent);
+  font-size: 1.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.borrower-validation-container form input {
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-light);
+  font-size: 1rem;
+  transition: border-color var(--transition);
+}
+
+.borrower-validation-container form input:focus {
+  outline: none;
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.borrower-validation-container form button {
+  width: 100%;
+  padding: 1rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition);
+  font-size: 1rem;
+}
+
+.borrower-validation-container form button:hover {
+  background: var(--accent-hover);
+}
+
+.borrower-validation-container p {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.borrower-validation-container p a {
+  color: var(--accent);
+  text-decoration: underline;
+  transition: color var(--transition);
+}
+
+.borrower-validation-container p a:hover {
+  color: var(--accent-hover);
+}
+
+.error {
+  color: #f87171;
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.borrower-details {
+  margin-top: 2rem;
+  background: #1e293b;
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--input-border);
+}
+
+.borrower-details h3 {
+  margin-bottom: 1rem;
+  color: var(--accent);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.borrower-details p {
+  margin: 0.4rem 0;
+  font-size: 0.95rem;
+}
+.info {
+  color: #60a5fa; /* light blue for notices */
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+}

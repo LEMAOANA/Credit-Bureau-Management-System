@@ -76,80 +76,143 @@ Step 11: Start the Frontend Server
          You are well set and Test now
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # PROJECT STRUCTURE
 Credit-Bureau-Management-System/
 │
 ├── backend/                                   # Backend - Node.js, Express, MongoDB
-│   ├── config/                                # Configuration files
-│   │   └── db.js                              # MongoDB connection setup
+│   ├── assets/
+│   │   └── images/
+│   │       └── LesothoFlag.png
 │   │
-│   ├── controllers/                           # Route handler logic (controllers)
+│   ├── config/
+│   │   ├── db.js
+│   │   └── testConnection.js
+│   │
+│   ├── controllers/
 │   │   ├── authController.js
 │   │   ├── borrowerController.js
+│   │   ├── creditReportController.js
 │   │   ├── loanController.js
 │   │   ├── repaymentController.js
-│   │   └── creditReportController.js
+│   │   └── userController.js
 │   │
-│   ├── models/                                # Mongoose schemas (data models)
-│   │   ├── User.js
+│   ├── middleware/
+│   │   └── authMiddleware.js
+│   │
+│   ├── models/
 │   │   ├── Borrower.js
 │   │   ├── Loan.js
 │   │   ├── Repayment.js
-│   │   └── CreditReport.js
+│   │   └── User.js
 │   │
-│   ├── routes/                                # API route definitions
+│   ├── routes/
 │   │   ├── authRoutes.js
 │   │   ├── borrowerRoutes.js
+│   │   ├── creditReportRoutes.js
 │   │   ├── loanRoutes.js
 │   │   ├── repaymentRoutes.js
-│   │   └── creditReportRoutes.js
+│   │   └── userRoutes.js
 │   │
-│   ├── middleware/                            # Middleware functions
-│   │   └── authMiddleware.js                  # Auth/authentication middleware
+│   ├── utils/
+│   │   ├── appError.js
+│   │   ├── catchAsync.js
+│   │   ├── csvGenerator.js
+│   │   ├── pdfGenerator.js
+│   │   └── generateSecret.js
 │   │
-│   ├── utilities/                             # Utility functions & error handlers
-│   │   ├── appError.js                        # Custom error class
-│   │   └── catchAsync.js                      # Async error wrapper
-│   │
-│   ├── server.js                              # Entry point to start the backend server
-│   ├── package.json                           # Backend dependencies & scripts
-│   ├── .env                                   # Environment variables
-│   └── README.md
+│   ├── server.js
+│   └── package.json
 │
 ├── frontend/                                  # Frontend - React
 │   ├── public/
-│   │   ├── assets/                            # Public static assets
-│   │   │   └── images/
-│   │   │       └── LesothoFlag.png
-│   │   └── index.html
 │   │
 │   ├── src/
-│   │   ├── components/                        # Reusable UI components
-│   │   │   ├── Home.js
-│   │   │   ├── Home.css
-│   │   │   ├── Login.js
-│   │   │   ├── Login.css
-│   │   │   ├── Users.js
+│   │   ├── components/
+│   │   │   ├── Admin.css
+│   │   │   ├── Admin.js
+│   │   │   ├── BorrowerSite.css
+│   │   │   ├── BorrowerSite.js
+│   │   │   ├── Borrowers.css
 │   │   │   ├── Borrowers.js
+│   │   │   ├── CreditReports.css
+│   │   │   ├── CreditReports.js
+│   │   │   ├── Dashboard.css
+│   │   │   ├── Dashboard.js
+│   │   │   ├── Landers.css
+│   │   │   ├── Landers.js
+│   │   │   ├── Loans.css
 │   │   │   ├── Loans.js
+│   │   │   ├── Login.css
+│   │   │   ├── Login.js
+│   │   │   ├── PrivateRoute.js
+│   │   │   ├── Repayments.css
 │   │   │   ├── Repayments.js
-│   │   │   └── CreditReports.js
-│   │   │
-│   │   ├── contexts/                          # React context providers
-│   │   │   └── AuthContext.js
-│   │   │
-│   │   ├── services/                          # Frontend service/API layer
-│   │   │   ├── api.js
-│   │   │   └── authService.js
-│   │   │
-│   │   ├── App.js
-│   │   ├── App.css
-│   │   ├── index.js                           # React entry point
-│   │   └── index.css
+│   │   │   ├── Signup.css
+│   │   │   ├── Signup.js
+│   │   │   ├── BorrowerValidation.js          # Borrower Validation Page (Step 1)
+│   │   │   ├── BorrowerValidation.css         # Borrower Validation Styling
+│   │   │   ├── BorrowerRegistration.js        # Borrower Registration Page (Step 2)
+│   │   │   ├── BorrowerRegistration.css       # Borrower Registration Styling
+│   │   │   ├── LoanApplication.js             # Loan Application Page after Registration
+│   │   │   └── LoanApplication.css            # Loan Application Styling
 │   │
-│   ├── .env                                   # Frontend environment variables
-│   ├── package.json                           # Frontend dependencies & scripts
-│   └── node_modules/
+│   │   ├── contexts/
+│   │   │   └── AuthContext.js                 # Context for managing authentication
+│   │
+│   │   ├── services/
+│   │   │   ├── api.js                         # API service for API requests
+│   │   │   └── authService.js                 # Handles authentication logic (login, registration)
+│   │
+│   │   ├── utils/
+│   │   │   └── setupAxios.js                  # Axios setup for API calls
+│   │
+│   │   ├── App.css
+│   │   ├── App.js
+│   │   ├── index.css
+│   │   └── index.js
 │
-├── .gitignore                                 # Files and folders to be ignored by Git
-└── README.md
+├── .gitignore
+├── package.json
+├── README.md
+
+
+Key Additions:
+BorrowerValidation.js & BorrowerValidation.css:
+
+The page where the borrower enters their National ID and Phone number to validate their status.
+
+BorrowerRegistration.js & BorrowerRegistration.css:
+
+The page where new borrowers enter their registration details, such as Name, Email, Phone, and loan-related information.
+
+LoanApplication.js & LoanApplication.css:
+
+The page where borrowers apply for a loan once they've completed validation and registration.
+
+Borrower Flow:
+Step 1: Borrower enters National ID & Phone number in BorrowerValidation.js.
+
+If no record is found, the user is directed to BorrowerRegistration.js.
+
+Step 2: Borrower fills in registration details (Name, Email, etc.) in BorrowerRegistration.js.
+
+Step 3: Once registered, borrower returns to the BorrowerValidation.js to continue the loan application process and receive an OTP.
+
+Step 4: After successful validation, borrower proceeds with the loan application in LoanApplication.js.
