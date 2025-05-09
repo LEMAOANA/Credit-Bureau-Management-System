@@ -77,17 +77,28 @@ Step 11: Start the Frontend Server
 
 
 
+# steps to pull change from github
+1. cd path/to/Credit-Bureau-Management-System
+2. git branch (you see the brach callec "main")
+3. git pull origin main
+ 
+4. cd backend
+   npm install
+   npm run server
 
+5. "on another terminal" 
+6. cd path/to/Credit-Bureau-Management-System
+7. cd frontend
+   npm install
+   npm start
 
+# Borrower Login Testing Instructions
 
+To test the borrower login functionality, use the borrower's National ID.
 
+If you don't know a borrower's National ID, check the database and copy it for login testing.
 
-
-
-
-
-
-
+Alternatively, you can register a new borrower and then use their National ID to test the login process.
 
 
 
@@ -192,27 +203,3 @@ Credit-Bureau-Management-System/
 ├── package.json
 ├── README.md
 
-
-Key Additions:
-BorrowerValidation.js & BorrowerValidation.css:
-
-The page where the borrower enters their National ID and Phone number to validate their status.
-
-BorrowerRegistration.js & BorrowerRegistration.css:
-
-The page where new borrowers enter their registration details, such as Name, Email, Phone, and loan-related information.
-
-LoanApplication.js & LoanApplication.css:
-
-The page where borrowers apply for a loan once they've completed validation and registration.
-
-Borrower Flow:
-Step 1: Borrower enters National ID & Phone number in BorrowerValidation.js.
-
-If no record is found, the user is directed to BorrowerRegistration.js.
-
-Step 2: Borrower fills in registration details (Name, Email, etc.) in BorrowerRegistration.js.
-
-Step 3: Once registered, borrower returns to the BorrowerValidation.js to continue the loan application process and receive an OTP.
-
-Step 4: After successful validation, borrower proceeds with the loan application in LoanApplication.js.

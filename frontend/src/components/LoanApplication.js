@@ -158,20 +158,41 @@ const LoanApplication = () => {
 
   return (
     <div className="loan-application-container">
-      <h2>Loan Application</h2>
+        <h2 className="dashboard-heading">Welcome, {state?.name}</h2>
+  <p className="subtext">This is your secure personal dashboard where you can manage all your loan activities in one place.</p>
+
+  <div className="dashboard-intro-card">
+    <h3 className="section-title">What you can do here:</h3>
+    <ul className="guidance-list">
+      <li>
+        <strong>Review your loans:</strong> View all your loans including current status, amount, interest, terms, and repayment details.
+      </li>
+      <li>
+        <strong>Manage repayments:</strong> Make repayments anytime with multiple payment options like Cash, Mobile Money, or Transfer.
+      </li>
+      <li>
+        <strong>Track repayment history:</strong> Get a full overview of your repayment activities to keep things transparent and organized.
+      </li>
+      <li>
+        <strong>Apply for a new loan:</strong> Need more financing? Click <em>“Apply for Loan”</em> and submit a new application instantly.
+      </li>
+    </ul>
+    <p className="support-note">You're in full control. If you need help, feel free to reach out to our support team. </p>
+  </div>
 
       {/* Borrower Info */}
-      <div className="borrower-details">
-        <p><strong>Name:</strong> {state?.name}</p>
-        <p><strong>Email:</strong> {state?.email}</p>
-        <p><strong>Phone:</strong> {state?.phone}</p>
-        <p><strong>National ID:</strong> {state?.nationalId}</p>
-      </div>
+  <div className="borrower-details-card">
+    <h4 className="section-title">Your Profile</h4>
+    <p><strong>Name:</strong> {state?.name}</p>
+    <p><strong>Email:</strong> {state?.email}</p>
+    <p><strong>Phone:</strong> {state?.phone}</p>
+    <p><strong>National ID:</strong> {state?.nationalId}</p>
+  </div>
 
       <button className="btn-highlight" onClick={handleApplyLoan}>Apply for Loan</button>
 
       {/* Loan Table */}
-      <h3>Loan Details</h3>
+      <h3> Your Loans Details</h3>
       {loans.length === 0 ? (
         <p>No loans found.</p>
       ) : (
@@ -221,7 +242,7 @@ const LoanApplication = () => {
       )}
 
       {/* Repayments Table */}
-      <h3>Repayments</h3>
+      <h3>Your Repayments details</h3>
       {repayments.length === 0 ? (
         <p>No repayments found.</p>
       ) : (

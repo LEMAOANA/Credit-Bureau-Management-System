@@ -462,3 +462,57 @@
     padding: 1.5rem;
   }
 }
+.dashboard-heading {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.subtext {
+  font-size: 1rem;
+  color: #ccc;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-intro-card {
+  background-color: #1e1e1e;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+.guidance-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 1rem 0;
+}
+
+.guidance-list li {
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  margin-bottom: 0.8rem;
+  color: #fff;
+}
+
+.support-note {
+  font-size: 0.9rem;
+  color: #aaa;
+  margin-top: 1rem;
+}
+
+.borrower-details-card {
+  background-color: #151515;
+  padding: 1.2rem;
+  border-radius: 10px;
+  border: 1px solid #333;
+  margin-bottom: 2rem;
+}
+
+.borrower-details-card p {
+  margin: 0.4rem 0;
+}
